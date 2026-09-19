@@ -1,0 +1,3564 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="중학교 1학년 기술·가정 청소년기 식생활 문제(아침결식, 섭식장애, 탄산음료와 당뇨, 나트륨과 고혈압, 편의점 즉석식품) 연계 공포의 부엌 방탈출 수업용 교육 게임">
+  <meta name="keywords" content="중학교 기술가정, 청소년 식생활 문제, 아침결식, 거식증, 폭식증, 마구먹기장애, 탄산음료, 당뇨병, 고혈압, 편의점식품, 방탈출게임">
+  <meta name="author" content="기술·가정 교사 개발자">
+  <title>저주받은 공포의 부엌: 청소년 식생활 탈출기 | 중1 기술·가정</title>
+  
+  <style>
+@charset "UTF-8";
+@import url('https://fonts.googleapis.com/css2?family=Creepster&family=Jua&family=Noto+Sans+KR:wght@400;600;700;800&display=swap');
+
+:root {
+  --horror-dark: #090d0b;
+  --horror-blood: #dc2626;
+  --horror-toxic: #10b981;
+  --horror-toxic-dim: #064e3b;
+  --horror-amber: #f59e0b;
+  --wood-cabinet: #271a13;
+  --text-light: #f1f5f9;
+  --text-muted: #94a3b8;
+  --font-horror: 'Creepster', cursive;
+  --font-game: 'Jua', 'Noto Sans KR', sans-serif;
+  --font-body: 'Noto Sans KR', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--horror-dark);
+  color: var(--text-light);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* 스크린 쉐이크 효과 */
+.screen-shake {
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-4px, 0, 0); }
+  20%, 80% { transform: translate3d(6px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+  40%, 60% { transform: translate3d(8px, 0, 0); }
+}
+
+/* 화면 플래시 효과 */
+.screen-flash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10000;
+  animation: fadeOutFlash 0.45s ease-out forwards;
+}
+
+.screen-flash.flash-red {
+  background: rgba(220, 38, 38, 0.4);
+}
+
+.screen-flash.flash-gold {
+  background: rgba(245, 158, 11, 0.35);
+}
+
+@keyframes fadeOutFlash {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* 비네팅 & 심장 박동 적색 펄스 */
+.vignette-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 500;
+  background: radial-gradient(circle at center, transparent 45%, rgba(0, 0, 0, 0.85) 100%);
+  transition: box-shadow 0.3s ease;
+}
+
+.vignette-overlay.heartbeat-pulse {
+  box-shadow: inset 0 0 100px rgba(220, 38, 38, 0.7);
+}
+
+/* 손전등 조명 마우스 효과 */
+.flashlight-beam {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 450;
+  background: radial-gradient(
+    circle 240px at var(--cursor-x, 50%) var(--cursor-y, 50%),
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(16, 185, 129, 0.02) 60%,
+    rgba(5, 10, 8, 0.65) 100%
+  );
+  mix-blend-mode: hard-light;
+}
+
+/* 상단 HUD 상태바 */
+.game-hud {
+  width: 100%;
+  max-width: 1080px;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(10px);
+  border-bottom: 2px solid #334155;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  z-index: 600;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.hud-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-badge {
+  background: #991b1b;
+  color: #fecaca;
+  font-family: var(--font-game);
+  font-size: 0.78rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.hud-game-title {
+  font-family: var(--font-game);
+  font-size: 1.35rem;
+  color: #f87171;
+  text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+/* 상태 게이지 (정신력 & 타이머 & 부적) */
+.hud-status-group {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.status-stat-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.stat-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.sanity-bar-wrap {
+  width: 140px;
+  height: 12px;
+  background: #1e293b;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #475569;
+}
+
+.sanity-bar-fill {
+  height: 100%;
+  width: 100%;
+  transition: width 0.35s ease, background 0.35s ease;
+}
+
+.sanity-bar-fill.normal {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.sanity-bar-fill.warning {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.sanity-bar-fill.critical {
+  background: linear-gradient(90deg, #ef4444, #991b1b);
+  animation: pulseCritical 0.6s infinite alternate;
+}
+
+@keyframes pulseCritical {
+  from { opacity: 0.7; }
+  to { opacity: 1; }
+}
+
+.timer-display {
+  font-family: var(--font-game);
+  font-size: 1.35rem;
+  color: #fbbf24;
+  letter-spacing: 1px;
+  transition: color 0.2s ease;
+}
+
+.timer-display.urgent {
+  color: #ef4444;
+  text-shadow: 0 0 12px rgba(239, 68, 68, 0.9);
+  animation: urgentBlink 0.5s infinite alternate;
+}
+
+@keyframes urgentBlink {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.1);
+    opacity: 0.75;
+  }
+}
+
+.talisman-slot-container {
+  display: flex;
+  gap: 6px;
+  font-size: 1.1rem;
+}
+
+.talisman-icon.active {
+  filter: drop-shadow(0 0 6px #fbbf24);
+  transform: scale(1.1);
+}
+
+.talisman-icon.inactive {
+  opacity: 0.25;
+  filter: grayscale(1);
+}
+
+/* 조작 버튼 */
+.hud-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ctrl-btn {
+  background: #1e293b;
+  color: #f1f5f9;
+  border: 1px solid #475569;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-family: var(--font-game);
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ctrl-btn:hover {
+  background: #334155;
+  border-color: #64748b;
+  transform: translateY(-1px);
+}
+
+.ctrl-btn.btn-notebook {
+  background: #065f46;
+  border-color: #10b981;
+  color: #a7f3d0;
+}
+
+.ctrl-btn.btn-notebook:hover {
+  background: #047857;
+}
+
+/* ==================== 공포의 부엌 룸 스테이지 ==================== */
+.kitchen-room-wrapper {
+  width: 100%;
+  max-width: 1080px;
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+.kitchen-stage {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 600px;
+  background: radial-gradient(circle at 50% 30%, #1e2d27 0%, #0d1613 60%, #050807 100%);
+  border: 4px solid #1e3a2d;
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.9), 0 20px 40px rgba(0, 0, 0, 0.8);
+}
+
+/* 부엌 배경 시각 요소 (깜빡이는 붉은 형광등) */
+.kitchen-flicker-light {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  height: 25px;
+  background: #f87171;
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 0 45px rgba(239, 68, 68, 0.85);
+  animation: flickerLight 3s infinite;
+  opacity: 0.85;
+}
+
+@keyframes flickerLight {
+  0%, 100% { opacity: 0.9; box-shadow: 0 0 45px rgba(239, 68, 68, 0.85); }
+  3% { opacity: 0.2; }
+  6% { opacity: 0.8; }
+  7% { opacity: 0.1; }
+  8% { opacity: 0.95; }
+  52% { opacity: 0.9; }
+  54% { opacity: 0.3; }
+  56% { opacity: 0.9; }
+}
+
+/* 부엌 바닥 타일 & 싱크대 원근감 */
+.kitchen-floor {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 38%;
+  background: linear-gradient(to bottom, #111a16 0%, #080d0b 100%);
+  border-top: 3px solid #243c30;
+  box-shadow: 0 -15px 30px rgba(0,0,0,0.8);
+}
+
+/* ==================== 5대 인터랙티브 핫스팟 ==================== */
+.kitchen-hotspot {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  z-index: 20;
+}
+
+.kitchen-hotspot:hover {
+  transform: scale(1.06) translateY(-4px);
+  filter: drop-shadow(0 0 16px rgba(16, 185, 129, 0.6));
+}
+
+.hotspot-icon-box {
+  width: 80px;
+  height: 80px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 3px solid #475569;
+  border-radius: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2.8rem;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.6);
+  position: relative;
+  transition: all 0.25s ease;
+}
+
+.hotspot-pulse-ring {
+  position: absolute;
+  inset: -6px;
+  border: 2px dashed rgba(239, 68, 68, 0.6);
+  border-radius: 24px;
+  animation: rotatePulse 4s linear infinite;
+}
+
+@keyframes rotatePulse {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.hotspot-tag {
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid #64748b;
+  color: #e2e8f0;
+  font-family: var(--font-game);
+  font-size: 0.82rem;
+  padding: 4px 10px;
+  border-radius: 8px;
+  margin-top: 6px;
+  white-space: nowrap;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+
+.hotspot-problem-sub {
+  display: block;
+  font-size: 0.7rem;
+  color: #f87171;
+  font-family: var(--font-body);
+  font-weight: 700;
+}
+
+/* 정화 완료된 핫스팟 스타일 */
+.kitchen-hotspot.purified .hotspot-icon-box {
+  border-color: #10b981;
+  background: rgba(6, 78, 59, 0.85);
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.7);
+}
+
+.kitchen-hotspot.purified .hotspot-pulse-ring {
+  border-color: #34d399;
+  animation: rotatePulse 8s linear infinite;
+}
+
+.kitchen-hotspot.purified .hotspot-tag {
+  border-color: #10b981;
+  color: #a7f3d0;
+}
+
+.kitchen-hotspot.purified .hotspot-problem-sub {
+  color: #34d399;
+}
+
+/* 개별 핫스팟 위치 지정 */
+/* 1. 오염된 냉장고 (좌측 상단) */
+.hotspot-fridge {
+  top: 24%;
+  left: 8%;
+}
+
+/* 2. 깨진 거울과 체중계 (좌측 하단) */
+.hotspot-mirror {
+  bottom: 12%;
+  left: 26%;
+}
+
+/* 3. 부글부글 마녀의 냄비 (중앙 가스레인지) */
+.hotspot-cauldron {
+  top: 32%;
+  left: 47%;
+}
+
+/* 4. 편의점 야식 선반 (우측 상단) */
+.hotspot-shelf {
+  top: 22%;
+  right: 18%;
+}
+
+/* 5. 사슬로 봉인된 탈출문 (우측 문) */
+.hotspot-door {
+  bottom: 12%;
+  right: 6%;
+}
+
+.hotspot-door .hotspot-icon-box {
+  width: 90px;
+  height: 96px;
+  border-color: #b91c1c;
+}
+
+/* 알림 액션 토스트 */
+.action-toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  padding: 10px 24px;
+  border-radius: 30px;
+  font-family: var(--font-game);
+  font-size: 1.05rem;
+  color: #fff;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  max-width: 90%;
+}
+
+.action-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.action-toast.toast-success {
+  background: #059669;
+  border: 2px solid #34d399;
+}
+
+.action-toast.toast-danger {
+  background: #dc2626;
+  border: 2px solid #f87171;
+}
+
+.action-toast.toast-warning {
+  background: #d97706;
+  border: 2px solid #fcd34d;
+}
+
+.action-toast.toast-info {
+  background: #334155;
+  border: 2px solid #64748b;
+}
+
+/* ==================== 공통 모달 시스템 ==================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 8, 7, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  padding: 16px;
+}
+
+.modal-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-window {
+  background: #0f172a;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 2px solid #334155;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  transform: scale(0.95);
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.25);
+  color: var(--text-light);
+}
+
+.modal-overlay.show .modal-window {
+  transform: scale(1);
+}
+
+.modal-header {
+  padding: 18px 24px 14px;
+  border-bottom: 1px solid #334155;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title {
+  font-family: var(--font-game);
+  font-size: 1.45rem;
+  color: #f87171;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.6rem;
+  color: #94a3b8;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #f1f5f9;
+}
+
+.modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 단서 조사 팝업 특화 */
+.investigate-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.investigate-icon {
+  font-size: 2.5rem;
+}
+
+.investigate-badge {
+  background: #991b1b;
+  color: #fecaca;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.investigate-title {
+  font-family: var(--font-game);
+  font-size: 1.5rem;
+  color: #f1f5f9;
+  margin-top: 2px;
+}
+
+.investigate-story-box {
+  background: #1e293b;
+  border-left: 4px solid #f87171;
+  padding: 14px 16px;
+  border-radius: 0 12px 12px 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: #e2e8f0;
+}
+
+/* 2단계 문제 진행 표시기 */
+.quiz-step-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0 10px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+
+.step-pill {
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: #94a3b8;
+  background: #1e293b;
+  border: 1px solid #334155;
+  transition: all 0.2s ease;
+}
+
+.step-pill.active {
+  color: #fef08a;
+  background: rgba(245, 158, 11, 0.25);
+  border-color: #f59e0b;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+.step-pill.completed {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+}
+
+.step-pill.upcoming {
+  opacity: 0.5;
+}
+
+.step-arrow {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.quiz-question-box {
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+.question-badge {
+  font-size: 0.72rem;
+  color: #fbbf24;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.question-text {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f9fafb;
+}
+
+/* 선택지 버튼들 */
+.choices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.choice-card-btn {
+  background: #1e293b;
+  border: 2px solid #334155;
+  border-radius: 14px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  color: #f1f5f9;
+}
+
+.choice-card-btn:hover {
+  background: #334155;
+  border-color: #64748b;
+  transform: translateX(4px);
+}
+
+.choice-num {
+  background: #0f172a;
+  color: #94a3b8;
+  font-family: var(--font-game);
+  font-size: 1.1rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.choice-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.disabled-choices .choice-card-btn {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* 선택 결과 피드백 박스 */
+.choice-feedback-box {
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.choice-feedback-box.hidden {
+  display: none;
+}
+
+.choice-feedback-box.success-feedback {
+  background: #064e3b;
+  border: 2px solid #10b981;
+}
+
+.choice-feedback-box.danger-feedback {
+  background: #7f1d1d;
+  border: 2px solid #ef4444;
+}
+
+.feedback-heading {
+  font-family: var(--font-game);
+  font-size: 1.25rem;
+}
+
+.success-feedback .feedback-heading { color: #6ee7b7; }
+.danger-feedback .feedback-heading { color: #fca5a5; }
+
+.feedback-desc {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #f1f5f9;
+}
+
+.obtained-item {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: #fef08a;
+}
+
+.hint-text {
+  font-size: 0.82rem;
+  color: #fecaca;
+  font-weight: 700;
+}
+
+/* 이미 정화된 구역 배너 */
+.already-solved-banner {
+  background: #064e3b;
+  border: 2px solid #10b981;
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+  color: #a7f3d0;
+}
+
+.solved-tip {
+  font-size: 0.85rem;
+  color: #d1fae5;
+  margin-top: 8px;
+}
+
+/* ==================== 영양 수첩 모달 (Notebook) ==================== */
+.notebook-window {
+  max-width: 860px;
+}
+
+/* 학습지 정리 툴바 */
+.worksheet-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #334155;
+}
+
+.toolbar-left, .toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode-tab-btn {
+  background: #1e293b;
+  border: 1px solid #475569;
+  color: #cbd5e1;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mode-tab-btn:hover {
+  background: #334155;
+  color: #fff;
+}
+
+.mode-tab-btn.active {
+  background: #047857;
+  border-color: #10b981;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.action-subtle-btn {
+  background: #334155;
+  border: 1px solid #64748b;
+  color: #f1f5f9;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.action-subtle-btn:hover {
+  background: #475569;
+}
+
+.action-subtle-btn.btn-copy {
+  background: #1e3a8a;
+  border-color: #3b82f6;
+  color: #bfdbfe;
+}
+
+.action-subtle-btn.btn-copy:hover {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* 학습지 표 스타일 */
+.worksheet-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 10px;
+  border: 1px solid #334155;
+  border-radius: 12px;
+}
+
+.worksheet-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  text-align: left;
+}
+
+.worksheet-summary-table th {
+  background: #0f172a;
+  color: #f1f5f9;
+  padding: 12px 14px;
+  border-bottom: 2px solid #334155;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.worksheet-summary-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #1e293b;
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.worksheet-summary-table tr:nth-child(even) {
+  background: rgba(30, 41, 59, 0.4);
+}
+
+.ws-topic-cell {
+  background: rgba(15, 23, 42, 0.8);
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.ws-icon {
+  font-size: 1.2rem;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.ws-badge-ok {
+  display: block;
+  font-size: 0.72rem;
+  color: #34d399;
+  margin-top: 4px;
+}
+
+.ws-badge-lock {
+  display: block;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.ws-cause-cell {
+  color: #fecaca;
+}
+
+.ws-impact-cell {
+  color: #fed7aa;
+}
+
+.ws-sol-cell {
+  color: #d1fae5;
+  font-weight: 600;
+}
+
+.ws-row-locked {
+  opacity: 0.75;
+}
+
+.ws-locked-content {
+  color: #94a3b8;
+  font-style: italic;
+  padding: 18px 14px;
+}
+
+.badge-solved {
+  color: #fef08a;
+  font-weight: 700;
+}
+
+.notebook-progress-banner {
+  background: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 12px;
+  padding: 12px 18px;
+  margin-bottom: 8px;
+}
+
+.progress-title {
+  font-family: var(--font-game);
+  font-size: 1.15rem;
+  color: #34d399;
+}
+
+.progress-sub {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.notebook-card {
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notebook-card.unlocked {
+  background: #1e293b;
+  border: 2px solid #10b981;
+}
+
+.notebook-card.locked {
+  background: #111827;
+  border: 1px dashed #475569;
+  opacity: 0.7;
+}
+
+.notebook-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 10px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-icon {
+  font-size: 2rem;
+}
+
+.area-tag {
+  font-size: 0.75rem;
+  color: #10b981;
+  font-weight: 700;
+}
+
+.card-problem-title {
+  font-family: var(--font-game);
+  font-size: 1.15rem;
+  color: #f1f5f9;
+}
+
+.status-cleared-badge {
+  background: #064e3b;
+  color: #6ee7b7;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid #10b981;
+}
+
+.status-locked-badge {
+  background: #374151;
+  color: #9ca3af;
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.notebook-section {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.notebook-section.cause { border-left: 4px solid #ef4444; }
+.notebook-section.impact { border-left: 4px solid #f59e0b; }
+.notebook-section.solution { border-left: 4px solid #10b981; }
+
+.section-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.notebook-section.cause .section-label { color: #f87171; }
+.notebook-section.impact .section-label { color: #fbbf24; }
+.notebook-section.solution .section-label { color: #34d399; }
+
+.section-text {
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #e2e8f0;
+}
+
+/* 엔딩 & 시작 화면 특화 */
+.start-box, .result-box {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.start-main-title {
+  font-family: var(--font-game);
+  font-size: 2.2rem;
+  color: #f87171;
+  text-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
+}
+
+.start-story-intro {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #cbd5e1;
+  background: #1e293b;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border-left: 4px solid #f87171;
+}
+
+.rule-highlight-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.rule-col {
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.rule-col.safe {
+  background: #064e3b;
+  border: 1px solid #10b981;
+  color: #a7f3d0;
+}
+
+.rule-col.danger {
+  background: #7f1d1d;
+  border: 1px solid #ef4444;
+  color: #fecaca;
+}
+
+.btn-large-start {
+  width: 100%;
+  background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+  color: #fff;
+  font-family: var(--font-game);
+  font-size: 1.35rem;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.4);
+  transition: transform 0.15s ease;
+}
+
+.btn-large-start:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(220, 38, 38, 0.6);
+}
+
+/* 대탈출 성공 뷰 */
+.victory-title {
+  font-family: var(--font-game);
+  font-size: 2.2rem;
+  color: #34d399;
+  text-shadow: 0 0 20px rgba(52, 211, 153, 0.7);
+}
+
+.certificate-card {
+  background: #064e3b;
+  border: 3px solid #34d399;
+  border-radius: 16px;
+  padding: 20px;
+  color: #d1fae5;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 선생님의 칭찬 한마디 배너 */
+.teacher-praise-banner {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(6, 78, 59, 0.6));
+  border: 2px solid #10b981;
+  box-shadow: 0 0 22px rgba(16, 185, 129, 0.35);
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 8px 0;
+  animation: glowPulse 2.5s infinite ease-in-out;
+}
+
+.praise-avatar {
+  font-size: 2.2rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.6));
+}
+
+.praise-content {
+  text-align: left;
+  flex: 1;
+}
+
+.praise-label {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #6ee7b7;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.praise-text {
+  font-family: var(--font-game);
+  font-size: 1.25rem;
+  color: #fef08a;
+  text-shadow: 0 0 12px rgba(254, 240, 138, 0.5);
+  line-height: 1.35;
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(16, 185, 129, 0.55), 0 0 10px rgba(254, 240, 138, 0.4);
+  }
+}
+
+.cert-badge {
+  font-family: var(--font-game);
+  font-size: 1.3rem;
+  color: #fef08a;
+}
+
+.cert-desc {
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+/* 모바일 & 태블릿 반응형 */
+@media (max-width: 768px) {
+  .game-hud {
+    padding: 8px 12px;
+  }
+  .hud-status-group {
+    gap: 10px;
+  }
+  .sanity-bar-wrap {
+    width: 90px;
+  }
+  .kitchen-stage {
+    aspect-ratio: 4 / 3;
+  }
+  .hotspot-icon-box {
+    width: 60px;
+    height: 60px;
+    font-size: 2rem;
+  }
+  .hotspot-tag {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+  }
+  .rule-highlight-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==================== 탈출 명예의 전당 (Leaderboard) 특화 스타일 ==================== */
+.ctrl-btn.btn-ranking {
+  background: #78350f;
+  border-color: #f59e0b;
+  color: #fef3c7;
+}
+
+.ctrl-btn.btn-ranking:hover {
+  background: #92400e;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+}
+
+.escape-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.stat-pill {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid #10b981;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  color: #a7f3d0;
+  text-align: center;
+}
+
+.stat-pill strong {
+  color: #fef08a;
+  font-size: 1.05rem;
+}
+
+/* 승리 화면 내 명단 등록 카드 */
+.leaderboard-register-card {
+  background: #1e293b;
+  border: 2px solid #f59e0b;
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin: 6px 0;
+  text-align: left;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.register-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-game);
+  font-size: 1.15rem;
+  color: #fbbf24;
+  margin-bottom: 10px;
+}
+
+.escape-time-badge {
+  background: #78350f;
+  color: #fef08a;
+  font-size: 0.85rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid #f59e0b;
+}
+
+.input-action-row {
+  display: flex;
+  gap: 10px;
+}
+
+.name-input {
+  flex: 1;
+  background: #0f172a;
+  border: 2px solid #475569;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  color: #f1f5f9;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.name-input:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+.name-input::placeholder {
+  color: #64748b;
+}
+
+.register-success-msg {
+  background: #064e3b;
+  color: #a7f3d0;
+  border: 1px solid #10b981;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin-top: 10px;
+  text-align: center;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.register-success-msg.hidden {
+  display: none;
+}
+
+/* 명예의 전당 모달 */
+.leaderboard-window {
+  max-width: 760px;
+}
+
+.leaderboard-praise-banner {
+  background: linear-gradient(135deg, rgba(120, 53, 15, 0.55), rgba(6, 78, 59, 0.7));
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.98rem;
+  color: #fef3c7;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.25);
+}
+
+.praise-star {
+  font-size: 1.3rem;
+  filter: drop-shadow(0 0 6px #f59e0b);
+}
+
+.leaderboard-praise-banner strong {
+  color: #6ee7b7;
+  font-family: var(--font-game);
+  font-size: 1.08rem;
+  text-shadow: 0 0 10px rgba(110, 231, 183, 0.4);
+}
+
+.rank-praise-pill {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  padding: 2px 8px;
+  border-radius: 999px;
+  margin-top: 4px;
+}
+
+.leaderboard-info-banner {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+  margin-bottom: 12px;
+}
+
+.btn-danger-subtle {
+  background: #450a0a;
+  border-color: #991b1b;
+  color: #fca5a5;
+  font-size: 0.78rem;
+  padding: 6px 12px;
+}
+
+.btn-danger-subtle:hover {
+  background: #7f1d1d;
+  color: #fff;
+}
+
+.leaderboard-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.92rem;
+}
+
+.ranking-table th {
+  background: #1e293b;
+  color: #94a3b8;
+  padding: 12px 14px;
+  border-bottom: 2px solid #334155;
+  font-weight: 700;
+}
+
+.ranking-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #1e293b;
+  color: #f1f5f9;
+}
+
+.ranking-table tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ranking-table .rank-cell {
+  font-family: var(--font-game);
+  font-size: 1.1rem;
+  width: 80px;
+}
+
+.rank-top-1 { color: #fbbf24; font-weight: 800; }
+.rank-top-2 { color: #e2e8f0; font-weight: 800; }
+.rank-top-3 { color: #d97706; font-weight: 800; }
+
+.rank-name {
+  font-weight: 700;
+  color: #f8fafb;
+}
+
+.rank-time {
+  font-family: var(--font-game);
+  color: #34d399;
+  font-size: 1.05rem;
+}
+
+.empty-leaderboard {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+
+</style>
+</head>
+<body>
+
+  <!-- 공포 분위기 비네팅 및 손전등 조명 오버레이 -->
+  <div class="vignette-overlay" id="vignetteOverlay" aria-hidden="true"></div>
+  <div class="flashlight-beam" id="flashlightBeam" aria-hidden="true"></div>
+
+  <!-- 실시간 알림 토스트 -->
+  <div class="action-toast" id="actionToast" role="alert" aria-live="polite"></div>
+
+  <!-- 상단 HUD 상태바 -->
+  <header class="game-hud">
+    <div class="hud-title-wrap">
+      <span class="hud-badge">중1 기술·가정</span>
+      <h1 class="hud-game-title">🩸 공포의 부엌: 식생활 탈출기</h1>
+    </div>
+
+    <!-- 상태 정보: 정신력, 남은 시간, 부적 -->
+    <div class="hud-status-group">
+      <!-- 정신력 (Sanity) -->
+      <div class="status-stat-box" title="정신력: 나쁜 정크푸드를 고르면 감소합니다!">
+        <span class="stat-label">🧠 생존 정신력: <strong id="sanityText">100%</strong></span>
+        <div class="sanity-bar-wrap">
+          <div class="sanity-bar-fill normal" id="sanityBar" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <!-- 타이머 -->
+      <div class="status-stat-box">
+        <span class="stat-label">⏱️ 탈출 제한시간</span>
+        <div class="timer-display" id="timerText">01:00</div>
+      </div>
+
+      <!-- 획득한 영양 부적 (5개 슬롯) -->
+      <div class="status-stat-box">
+        <span class="stat-label">✨ 영양 부적 (<span id="unlockedCount">0/5</span>)</span>
+        <div class="talisman-slot-container" id="talismanSlots">
+          <span class="talisman-icon inactive">⚪</span>
+          <span class="talisman-icon inactive">⚪</span>
+          <span class="talisman-icon inactive">⚪</span>
+          <span class="talisman-icon inactive">⚪</span>
+          <span class="talisman-icon inactive">⚪</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 상단 조작 버튼 -->
+    <div class="hud-actions">
+      <button type="button" class="ctrl-btn btn-ranking" id="openLeaderboardBtn" title="탈출 순서 명예의 전당 보기">
+        🏆 <span class="btn-text">탈출 명단</span>
+      </button>
+      <button type="button" class="ctrl-btn btn-notebook" id="openNotebookBtn" title="수업 내용 정리 및 학습지 작성용 마스터시트 보기">
+        📝 <span class="btn-text">수업 내용 정리 (학습지)</span>
+      </button>
+      <button type="button" class="ctrl-btn" id="soundToggleBtn" title="효과음 켜기/끄기">
+        🔊 <span class="btn-text">소리 켬</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== 공포의 부엌 메인 스테이지 ==================== -->
+  <main class="kitchen-room-wrapper">
+    <div class="kitchen-stage" id="kitchenStage" aria-label="공포의 부엌 방탈출 구역">
+      
+      <!-- 깜빡이는 붉은 전등 -->
+      <div class="kitchen-flicker-light"></div>
+
+      <!-- 부엌 바닥 -->
+      <div class="kitchen-floor"></div>
+
+      <!-- 1. 썩어가는 냉장고 (아침결식 & 뇌 건강) -->
+      <div class="kitchen-hotspot hotspot-fridge" data-area="fridge" tabindex="0" role="button" aria-label="오염된 냉장고 조사하기">
+        <div class="hotspot-icon-box">
+          <span class="hotspot-pulse-ring"></span>
+          <span>🧊</span>
+        </div>
+        <div class="hotspot-tag">
+          [1] 썩어가는 냉장고
+          <span class="hotspot-problem-sub">아침결식의 저주</span>
+        </div>
+      </div>
+
+      <!-- 2. 깨진 거울과 체중계 (섭식장애: 거식·폭식·마구먹기) -->
+      <div class="kitchen-hotspot hotspot-mirror" data-area="mirror" tabindex="0" role="button" aria-label="깨진 거울과 체중계 조사하기">
+        <div class="hotspot-icon-box">
+          <span class="hotspot-pulse-ring"></span>
+          <span>🪞</span>
+        </div>
+        <div class="hotspot-tag">
+          [2] 거울 & 체중계
+          <span class="hotspot-problem-sub">외모강박과 섭식장애</span>
+        </div>
+      </div>
+
+      <!-- 3. 부글부글 마녀의 냄비 (탄산음료 & 청소년 당뇨병) -->
+      <div class="kitchen-hotspot hotspot-cauldron" data-area="cauldron" tabindex="0" role="button" aria-label="마녀의 냄비 조사하기">
+        <div class="hotspot-icon-box">
+          <span class="hotspot-pulse-ring"></span>
+          <span>🧪</span>
+        </div>
+        <div class="hotspot-tag">
+          [3] 마녀의 냄비
+          <span class="hotspot-problem-sub">탄산·과당과 당뇨병</span>
+        </div>
+      </div>
+
+      <!-- 4. 편의점 야식 선반 (나트륨 폭탄 & 청소년 고혈압) -->
+      <div class="kitchen-hotspot hotspot-shelf" data-area="shelf" tabindex="0" role="button" aria-label="편의점 야식 선반 조사하기">
+        <div class="hotspot-icon-box">
+          <span class="hotspot-pulse-ring"></span>
+          <span>🍜</span>
+        </div>
+        <div class="hotspot-tag">
+          [4] 편의점 야식 선반
+          <span class="hotspot-problem-sub">나트륨과 고혈압</span>
+        </div>
+      </div>
+
+      <!-- 5. 사슬로 봉인된 탈출문 (최종 관문: 균형 영양 식단) -->
+      <div class="kitchen-hotspot hotspot-door" data-area="door" tabindex="0" role="button" aria-label="봉인된 탈출문 조사하기">
+        <div class="hotspot-icon-box">
+          <span class="hotspot-pulse-ring"></span>
+          <span>🚪</span>
+        </div>
+        <div class="hotspot-tag">
+          [5] 봉인된 탈출문
+          <span class="hotspot-problem-sub">최종 균형 식단 퍼즐</span>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ==================== 모달 시스템 ==================== -->
+
+  <!-- 1. 시작 인트로 모달 -->
+  <div class="modal-overlay show" id="introModal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h2 class="modal-title" id="introTitle">🏚️ 저주받은 공포의 부엌</h2>
+      </div>
+      <div class="modal-body start-box">
+        <div class="start-main-title">방탈출: 청소년 식생활 탈출기</div>
+        
+        <p class="start-story-intro">
+          늦은 밤, 컵라면과 탄산음료를 먹고 잠든 당신...<br>
+          눈을 떠보니 기괴한 붉은 달빛이 스며드는 <strong>'저주받은 공포의 부엌'</strong>에 갇혔습니다!<br>
+          부엌 구석구석 도사린 <strong>청소년기 5대 식생활 문제의 망령</strong>을 물리치고,<br>
+          올바른 건강 식품을 선택하여 5개의 영양 부적을 완성해야만 탈출문이 열립니다!
+        </p>
+
+        <div class="rule-highlight-grid">
+          <div class="rule-col safe">
+            <strong>✨ 건강 식품 선택 시</strong>
+            <p>공포가 정화되고, 부적을 얻으며, '탐정 영양 수첩'에 원인·영향·해결책이 기록됩니다!</p>
+          </div>
+          <div class="rule-col danger">
+            <strong>💀 나쁜 정크푸드 선택 시</strong>
+            <p>독소와 공포로 정신력(뇌 에너지)이 깎이며, 0%가 되면 영원히 갇히게 됩니다!</p>
+          </div>
+        </div>
+
+        <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 12px; padding: 12px 16px; margin: 12px 0; text-align: left; font-size: 0.9rem; color: #fecaca;">
+          <div style="font-weight: 700; color: #f87171; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            <span>⏱️ 긴급 미션: 1분 (60초) 타임어택!</span>
+          </div>
+          <div>1분 안에 5개 구역의 식생활 문제를 해결하지 못하면 <strong>즉시 탈락</strong>합니다!</div>
+          <div style="margin-top: 6px; color: #fef08a; font-size: 0.85rem;">
+            💡 <strong>교사의 힌트:</strong> 겉보기엔 건강식 같지만 실제론 단순당·나트륨 폭탄인 <em>'고난도 위장 함정'</em>이 섞여 있으니 신중하게 선택하세요!
+          </div>
+        </div>
+
+        <button type="button" class="btn-large-start" id="startGameBtn">
+          🔦 손전등을 켜고 1분 타임어택 시작!
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 구역 단서 조사 및 퀴즈 모달 -->
+  <div class="modal-overlay" id="investigateModal" role="dialog" aria-modal="true" aria-labelledby="investigateAreaTitle">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h2 class="modal-title" id="investigateAreaTitle">🔍 구역 단서 조사</h2>
+        <button type="button" class="close-btn close-investigate-btn" aria-label="조사 닫기">&times;</button>
+      </div>
+      <div class="modal-body" id="investigateContent">
+        <!-- 자바스크립트로 동적 렌더링 -->
+      </div>
+      <div class="modal-footer" style="padding: 12px 24px; border-top: 1px solid #334155; display: flex; justify-content: flex-end;">
+        <button type="button" class="ctrl-btn close-investigate-btn">부엌으로 돌아가기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 탐정 영양 수첩 모달 (수업 정리 및 복습) -->
+  <div class="modal-overlay" id="notebookModal" role="dialog" aria-modal="true" aria-labelledby="notebookModalTitle">
+    <div class="modal-window notebook-window">
+      <div class="modal-header">
+        <h2 class="modal-title" id="notebookModalTitle">📝 수업 내용 정리 (학습지 작성용 마스터시트)</h2>
+        <button type="button" class="close-btn close-notebook-btn" aria-label="수첩 닫기">&times;</button>
+      </div>
+      <div class="modal-body" id="notebookContent">
+        <!-- 자바스크립트로 동적 렌더링 -->
+      </div>
+      <div class="modal-footer" style="padding: 14px 24px; border-top: 1px solid #334155; display: flex; justify-content: flex-end;">
+        <button type="button" class="ctrl-btn btn-primary close-notebook-btn">확인 완료</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 대탈출 성공 승리 모달 -->
+  <div class="modal-overlay" id="victoryModal" role="dialog" aria-modal="true" aria-labelledby="victoryTitle">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h2 class="modal-title" id="victoryTitle" style="color: #34d399;">🎉 대탈출 성공!</h2>
+      </div>
+      <div class="modal-body result-box">
+        <div class="victory-title">저주가 풀렸습니다!</div>
+        <p style="font-size: 1.05rem; line-height: 1.6; color: #e2e8f0;">
+          5개의 영양 부적이 하나로 모여 눈부신 빛을 뿜어냅니다.<br>
+          부엌을 짓누르던 썩은 야식의 냄새와 공포의 안개가 걷히고, 따사로운 아침 햇살이 비쳐듭니다!
+        </p>
+
+        <!-- 교사의 칭찬 한마디 배너 -->
+        <div class="teacher-praise-banner" id="teacherPraiseBanner">
+          <div class="praise-avatar">👨‍🏫</div>
+          <div class="praise-content">
+            <span class="praise-label">선생님의 칭찬 한마디</span>
+            <div class="praise-text" id="praiseQuoteText">"건강한 식생활을 실천할 수 있게 되었군요 ~"</div>
+          </div>
+        </div>
+
+        <div class="certificate-card">
+          <div class="cert-badge">🏆 청소년 식생활 마스터 인증서</div>
+          <p class="cert-desc">
+            귀하는 아침결식, 섭식장애, 당류 과다, 나트륨 중독의 위험성을 완벽히 간파하고,<br>
+            <strong>성장기 청소년의 몸과 뇌를 위한 균형 잡힌 건강 식품</strong>을 올바르게 선택하여<br>
+            공포의 부엌을 당당히 탈출하였음을 증명합니다!
+          </p>
+          <div class="escape-stats-grid">
+            <div class="stat-pill">⏱️ 탈출 소요 시간: <strong id="victoryTimeTaken">00분 00초</strong></div>
+            <div class="stat-pill">🧠 최종 잔여 정신력: <strong id="victorySanity">100%</strong></div>
+          </div>
+        </div>
+
+        <!-- 빠른 탈출 명예의 전당 등록 카드 -->
+        <div class="leaderboard-register-card" id="leaderboardRegisterCard">
+          <div class="register-header">
+            <span>🏆 탈출 순위 명단 등록</span>
+            <span class="escape-time-badge" id="playerTimeBadge">00분 00초 기록</span>
+          </div>
+          <div class="input-action-row">
+            <input type="text" id="playerNameInput" class="name-input" placeholder="학번 / 이름 / 모둠명 (예: 1-2 김민수)" maxlength="15">
+            <button type="button" class="ctrl-btn btn-primary" id="saveScoreBtn">명단 등록</button>
+          </div>
+          <div id="registerSuccessMsg" class="register-success-msg hidden">✅ 탈출 명단에 등록되었습니다! 건강한 식생활을 실천할 수 있게 되었군요 ~</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px;">
+          <button type="button" class="ctrl-btn btn-ranking" id="viewLeaderboardFromVictoryBtn" style="justify-content: center; padding: 12px;">
+            🏆 탈출 명단 보기
+          </button>
+          <button type="button" class="ctrl-btn btn-notebook" id="openNotebookFromVictoryBtn" onclick="window.game.notebook.open(true);" style="justify-content: center; padding: 12px;">
+            📝 수업 내용 정리 (학습지)
+          </button>
+          <button type="button" class="ctrl-btn restart-game-btn" style="justify-content: center; padding: 12px;">
+            🔄 다시 도전하기
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 탈출 순서 명예의 전당 모달 (Leaderboard) -->
+  <div class="modal-overlay" id="leaderboardModal" role="dialog" aria-modal="true" aria-labelledby="leaderboardTitle">
+    <div class="modal-window leaderboard-window">
+      <div class="modal-header">
+        <h2 class="modal-title" id="leaderboardTitle" style="color: #fbbf24;">🏆 탈출 순서 명예의 전당</h2>
+        <button type="button" class="close-btn close-leaderboard-btn" aria-label="명단 닫기">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="leaderboard-praise-banner">
+          <span class="praise-star">✨</span>
+          <span>빨리 탈출한 자랑스러운 학생들! <strong>"건강한 식생활을 실천할 수 있게 되었군요 ~"</strong></span>
+        </div>
+        <div class="leaderboard-info-banner">
+          <span>⚡ <strong>빨리 탈출한 순서대로</strong> 자동 정렬됩니다.</span>
+          <button type="button" class="ctrl-btn btn-danger-subtle" id="resetLeaderboardBtn" title="다음 반 수업을 위한 명단 초기화">
+            🗑️ 명단 초기화 (교사용)
+          </button>
+        </div>
+        <div class="leaderboard-table-wrap" id="leaderboardTableContainer">
+          <!-- 명단 테이블이 자바스크립트로 렌더링됩니다 -->
+        </div>
+      </div>
+      <div class="modal-footer" style="padding: 14px 24px; border-top: 1px solid #334155; display: flex; justify-content: flex-end;">
+        <button type="button" class="ctrl-btn close-leaderboard-btn">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 게임 오버 모달 -->
+  <div class="modal-overlay" id="gameOverModal" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h2 class="modal-title" id="gameOverTitle">💀 탈출 실패...</h2>
+      </div>
+      <div class="modal-body result-box">
+        <div style="font-size: 3rem;">👻</div>
+        <div style="font-family: var(--font-game); font-size: 1.8rem; color: #ef4444;">정크푸드 망령의 지배</div>
+        <p id="gameOverReason" style="font-size: 1rem; color: #fecaca; line-height: 1.5; background: #7f1d1d; padding: 12px; border-radius: 10px;">
+          정신력이 바닥나 공포의 부엌을 탈출하지 못했습니다...
+        </p>
+        <p style="font-size: 0.88rem; color: #cbd5e1;">
+          💡 <strong>교사의 조언:</strong> 자극적인 정크푸드의 유혹을 이겨내고, 몸과 뇌에 에너지를 주는 진짜 건강 식품을 선택해 보세요!
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+          <button type="button" class="ctrl-btn btn-notebook" onclick="window.game.notebook.open(true);" style="justify-content: center; padding: 12px;">
+            📝 수업 내용 정리 (학습지용)
+          </button>
+          <button type="button" class="ctrl-btn restart-game-btn" style="justify-content: center; padding: 12px; background: #991b1b; border-color: #ef4444;">
+            🔄 다시 도전하기
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 모듈 스크립트 순차 로드 (CORS 문제 없는 완벽한 표준 스크립트) -->
+  <script>
+/**
+ * 중학교 1학년 기술·가정 (청소년기의 영양과 식생활 문제)
+ * 공포의 부엌 방탈출 게임 시나리오 및 교육용 데이터셋
+ */
+
+const ESCAPE_GAME_DATA = {
+  title: "저주받은 공포의 부엌: 청소년 식생활 탈출기",
+  intro: {
+    story: "밤늦게 컵라면과 탄산음료를 마시고 잠에 든 당신... 눈을 떠보니 기괴한 붉은 달빛이 스며드는 '저주받은 부엌'에 갇혔습니다! 부엌 곳곳에는 청소년의 건강을 갉아먹는 식생활 문제의 망령들이 도사리고 있습니다. 올바른 식생활의 원인과 영향을 파악하고, 진정한 '생명의 건강 식품'을 찾아 5개의 영양 부적을 완성해야만 탈출문이 열립니다!",
+    warning: "⚠️ 주의: 나쁜 정크푸드의 유혹에 넘어가면 공포와 독소로 정신력(Sanity)이 깎이고 영원히 이 부엌에 갇히게 됩니다!"
+  },
+
+  // 5대 핵심 구역 및 식생활 문제 단서
+  areas: [
+    {
+      id: "fridge",
+      name: "썩어가는 냉장고",
+      topic: "아침결식과 뇌 건강",
+      icon: "🧊",
+      shortDesc: "문 틈새로 검은 연기가 새어 나오는 차가운 냉장고...",
+      problemTitle: "문제 1: 등교 전 습관적인 아침결식 (Breakfast Skipping)",
+      
+      storyText: "냉장고 문을 열자 악취와 함께 차가운 굶주림의 망령이 속삭입니다.\n'늦잠 자느라 바쁜데 아침 따위 안 먹어도 되잖아? 점심에 마구 몰아서 배 터지게 먹으면 그만이지... 큭큭!'",
+      
+      curriculum: {
+        cause: "늦잠, 등교 준비 시간 부족, 불규칙한 수면 습관, 잘못된 다이어트 의식으로 아침 식사를 습관적으로 거름.",
+        impact: "밤새 소모된 포도당이 보충되지 않아 오전 중 뇌 기능 저하(집중력·기억력·학습 능력 급감), 피로감과 신경과민 유발. 점심시간 폭식으로 이어져 비만 유발, 빈속에 위산 분비로 위염·위궤양 위험 증가.",
+        solution: "거창한 식사가 아니더라도 뇌 에너지원인 복합 탄수화물과 단백질이 포함된 간편한 건강식(통곡물 빵, 바나나, 삶은 달걀, 우유, 견과류)을 규칙적으로 챙겨 먹는 습관 들이기."
+      },
+
+      questions: [
+        {
+          step: 1,
+          stepTitle: "1단계: 문제 원인 및 뇌 건강 악영향 파악",
+          question: "아침 식사를 거르는 '아침결식'이 청소년의 몸과 뇌에 미치는 가장 치명적인 영향은 무엇일까요?",
+          choices: [
+            {
+              id: "q1_correct",
+              name: "밤새 소모된 포도당이 보충되지 않아 뇌 기능(집중력·기억력)이 급감하고, 점심 폭식으로 이어진다.",
+              isHealthy: true,
+              feedback: "✨ 1단계 정답! 뇌는 포도당만을 유일한 에너지원으로 사용합니다! 아침을 거르면 뇌가 굶주려 오전 수업 집중력이 곤두박질치고 점심 폭식으로 비만을 유발합니다."
+            },
+            {
+              id: "q1_wrong1",
+              name: "아침을 굶으면 기초대사량이 급격히 늘어나서 건강하게 체중이 감량된다.",
+              isHealthy: false,
+              feedback: "❌ 잘못된 상식! 공복이 길어지면 몸은 위기 상태로 인식해 오히려 기초대사량을 낮추고, 섭취하는 영양소를 지방으로 더 많이 축적합니다!"
+            },
+            {
+              id: "q1_wrong2",
+              name: "아침을 거르면 소화 기관이 완전히 휴식하여 하루 종일 속이 편안해진다.",
+              isHealthy: false,
+              feedback: "❌ 위험한 오해! 빈속에 분비된 강한 위산이 위벽을 공격하여 위염과 위궤양의 원인이 됩니다!"
+            }
+          ]
+        },
+        {
+          step: 2,
+          stepTitle: "2단계: 뇌를 깨우는 올바른 아침 건강 식품 선택",
+          question: "굶주린 뇌에 안정적인 포도당과 활력을 공급할 최고의 아침 식사 조합은?",
+          choices: [
+            {
+              id: "q2_correct",
+              name: "통곡물 식빵 1쪽 + 삶은 달걀 1개 + 바나나 반 개 + 저지방 흰 우유 1잔",
+              isHealthy: true,
+              feedback: "✨ 구역 정화 성공! 완벽한 아침 처방입니다! 복합 탄수화물(통곡물, 바나나)이 지속해서 포도당을 공급하고, 양질의 단백질(달걀, 우유)이 든든한 포만감을 유지해 줍니다!",
+              talisman: "황금 아침의 부적 (뇌 활력 복합 포도당 & 단백질)"
+            },
+            {
+              id: "q2_tricky",
+              name: "바쁜 아침 가볍게! 시판 100% 오렌지 과채주스 1팩 + 달콤한 초코 모닝 시리얼",
+              isHealthy: false,
+              feedback: "❌ [고난도 함정!] 시판 농축 과채주스와 코팅 시리얼은 단순당이 대부분이라 혈당 롤러코스터를 일으켜 1교시 수업 중 극심한 졸음을 부릅니다!"
+            },
+            {
+              id: "q2_wrong",
+              name: "잠을 확 깨워준다는 고카페인 에너지 드링크와 초콜릿 바",
+              isHealthy: false,
+              feedback: "❌ 일시적 각성 뒤 극심한 두통과 신경과민이 찾아오며 위벽을 헐게 만듭니다!"
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      id: "mirror",
+      name: "깨진 거울과 저주받은 체중계",
+      topic: "외모지상주의와 섭식장애 (거식증·폭식증·마구먹기)",
+      icon: "🪞",
+      shortDesc: "비정상적으로 찌그러져 보이는 깨진 거울과 피 묻은 체중계...",
+      problemTitle: "문제 2: 왜곡된 신체상과 섭식장애 (Eating Disorders)",
+      
+      storyText: "거울 속 당신의 모습이 해골처럼 말랐는데도 괴물은 '너는 아직도 너무 뚱뚱해! 더 굶거나, 먹고 토해버려!'라며 날카로운 비명을 지릅니다.",
+      
+      curriculum: {
+        cause: "대중매체의 마른 몸매 찬양, 왜곡된 신체 이미지(바디 이미지), 성적·외모 스트레스, 심리적 불안으로 식사 행동에 심각한 장애 발생.",
+        impact: "① 거식증(신경성 식욕부진증): 극단적 절식으로 영양실조, 빈혈, 무월경, 탈모, 성장판 조기 폐쇄 및 사망 위험. ② 폭식증(신경성 대식증): 폭식 후 죄책감으로 억지 구토·이뇨제 복용 -> 식도 파열, 치아 부식, 전해질 불균형. ③ 마구먹기장애(폭식장애): 배가 불러도 멈추지 못하고 몰래 폭식 -> 고도비만과 극심한 우울증.",
+        solution: "타인의 시선에 맞춘 획일적 마른 몸매가 아닌 '건강한 신체'를 소중히 여기기. 하루 세끼 정해진 시간에 균형 잡힌 자연 식품 먹기. 스트레스는 운동이나 취미로 풀고 필요 시 위클래스나 전문 상담 받기."
+      },
+
+      questions: [
+        {
+          step: 1,
+          stepTitle: "1단계: 섭식장애의 종류와 증상 구별",
+          question: "다음 중 '신경성 식욕부진증(거식증)'의 전형적인 증상과 위험성에 대한 설명으로 옳은 것은?",
+          choices: [
+            {
+              id: "q1_correct",
+              name: "체중이 정상보다 15% 이상 부족함에도 살찔까 두려워 음식을 거부하여, 성장판 조기 폐쇄와 생명 위험을 초래한다.",
+              isHealthy: true,
+              feedback: "✨ 1단계 정답! 거식증은 왜곡된 신체상으로 저체중임에도 체중 증가를 극도로 두려워하는 치명적인 정신·신체적 질환입니다."
+            },
+            {
+              id: "q1_wrong1",
+              name: "폭식 후 살이 찔까 봐 두려워 손가락을 넣어 구토하거나 설사약을 먹는 행위를 말한다.",
+              isHealthy: false,
+              feedback: "❌ 섭식장애 구분 오류! 폭식 후 구토나 하제 복용 등의 보상 행동을 하는 것은 '신경성 대식증(폭식증)'의 증상입니다!"
+            },
+            {
+              id: "q1_wrong2",
+              name: "배가 불러도 음식을 멈추지 못하고 몰래 폭식하되, 구토는 전혀 하지 않는 상태를 말한다.",
+              isHealthy: false,
+              feedback: "❌ 섭식장애 구분 오류! 구토 없이 통제력을 잃고 폭식을 반복하는 것은 '마구먹기장애(폭식장애)'입니다!"
+            }
+          ]
+        },
+        {
+          step: 2,
+          stepTitle: "2단계: 건강한 신체상과 올바른 식사 실천",
+          question: "왜곡된 거울의 저주를 풀고 내 몸을 건강하게 사랑하기 위한 올바른 실천 방안은?",
+          choices: [
+            {
+              id: "q2_correct",
+              name: "내 체형의 다양성을 존중하고, 하루 세끼 정해진 시간에 단백질·채소·곡류가 균형 잡힌 정량을 섭취한다.",
+              isHealthy: true,
+              feedback: "✨ 구역 정화 성공! 왜곡된 거울이 맑아집니다! 내 몸의 성장을 위한 적정 영양을 규칙적으로 공급하고 건강한 자존감을 갖는 것이 최고의 백신입니다!",
+              talisman: "자존감과 조화의 부적 (규칙적 균형 식사 & 자기 긍정)"
+            },
+            {
+              id: "q2_tricky",
+              name: "살찔까 봐 방울토마토 5알만 먹으며 매일 3시간씩 강박적으로 줄넘기를 하는 '독한 자기관리'를 실천한다.",
+              isHealthy: false,
+              feedback: "❌ [고난도 함정!] 청소년들이 '철저한 자기관리'로 착각하기 쉽지만, 극단적 절식과 강박적 운동은 거식증의 명백한 위험 신호입니다!"
+            },
+            {
+              id: "q2_wrong",
+              name: "먹고 싶은 음식을 마음껏 다 먹은 뒤 화장실에 가서 억지로 손가락을 넣어 구토한다.",
+              isHealthy: false,
+              feedback: "❌ 식도염, 치아 부식, 심장마비를 부르는 전해질 쇼크를 초래하는 치명적 행위입니다!"
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      id: "cauldron",
+      name: "부글부글 끓는 마녀의 냄비",
+      topic: "탄산음료·액상과당과 청소년 당뇨병",
+      icon: "🧪",
+      shortDesc: "검붉은 거품을 내뿜으며 끈적이는 설탕 냄새를 풍기는 냄비...",
+      problemTitle: "문제 3: 탄산음료/액상과당 중독과 청소년 당뇨병 (Sugars & Diabetes)",
+      
+      storyText: "냄비 속에서 끈적한 당류 슬라임이 튀어 오릅니다.\n'물 따윈 밍밍해서 맛없잖아! 톡 쏘는 탄산음료와 달콤한 과당 음료를 들이켜! 뇌가 번쩍 뜨일 테니까!'",
+      
+      curriculum: {
+        cause: "물 대신 탄산음료, 가당 주스, 흑당 음료, 에너지 드링크를 습관적으로 마시는 습관. 가공식품에 든 흡수 빠른 액상과당(High Fructose Corn Syrup) 과다 섭취.",
+        impact: "체내로 당분이 급속 흡수되어 혈당이 치솟는 '혈당 스파이크' 발생. 췌장이 혹사당해 인슐린 저항성이 생기며, 10대 청소년에게 성인병인 '제2형 당뇨병'과 비알코올성 지방간, 충치, 뼈 속 칼슘 유출 초래.",
+        solution: "갈증이 날 때는 설탕 음료 대신 순수한 물이나 보리차·현미차 마시기. 음료수를 살 때는 반드시 뒷면 '영양성분표'의 당류(g)를 확인하고 하루 당류 섭취량(25~50g 미만) 지키기."
+      },
+
+      questions: [
+        {
+          step: 1,
+          stepTitle: "1단계: 액상과당과 청소년 당뇨병의 원리 파악",
+          question: "탄산음료와 단 음료에 흔히 쓰이는 '액상과당'이 청소년 몸에 미치는 악영향으로 옳은 것은?",
+          choices: [
+            {
+              id: "q1_correct",
+              name: "체내로 급속히 흡수되어 '혈당 스파이크'를 일으키고, 췌장을 혹사시켜 청소년기 '제2형 당뇨병'을 유발한다.",
+              isHealthy: true,
+              feedback: "✨ 1단계 정답! 액상과당은 소화 과정 없이 혈액으로 직행해 혈당을 폭발시키며, 인슐린 저항성을 유발해 성인병인 제2형 당뇨병을 부릅니다."
+            },
+            {
+              id: "q1_wrong1",
+              name: "액상과당은 천연 과일 성분이므로 혈당을 전혀 올리지 않고 뼈 성장을 촉진한다.",
+              isHealthy: false,
+              feedback: "❌ 속지 마세요! 액상과당은 옥수수 전분으로 만든 고농축 가공당으로, 설탕보다 흡수가 빨라 지방간과 당뇨병을 훨씬 빠르게 유발합니다!"
+            },
+            {
+              id: "q1_wrong2",
+              name: "탄산음료의 산성 성분은 치아와 뼈를 강화해 주는 긍정적인 역할을 한다.",
+              isHealthy: false,
+              feedback: "❌ 정반대입니다! 탄산음료 속의 인산염과 산성 성분은 치아를 부식시키고 뼈 속의 칼슘을 몸 밖으로 배출시킵니다!"
+            }
+          ]
+        },
+        {
+          step: 2,
+          stepTitle: "2단계: 췌장을 보호하는 건강한 수분 섭취법 선택",
+          question: "마녀의 당류 솥을 식히고 췌장과 혈관을 보호할 가장 올바른 수분 섭취 식품은?",
+          choices: [
+            {
+              id: "q2_correct",
+              name: "순수한 생수(물)를 하루 1.5~2L(6~8잔) 틈틈이 마시고, 구수한 보리차나 현미차 곁들이기",
+              isHealthy: true,
+              feedback: "✨ 구역 정화 성공! 맑은 생수가 마녀의 솥을 식혔습니다! 물은 혈액 순환을 돕고 췌장에 부담이 전혀 없는 최고의 생명수입니다!",
+              talisman: "맑은 생수의 부적 (노폐물 배출 & 혈당 안정)"
+            },
+            {
+              id: "q2_tricky",
+              name: "설탕 0g이니까 안심! 인공감미료 제로 탄산음료와 가당 비타민 워터를 물 대신 매일 2L 마시기",
+              isHealthy: false,
+              feedback: "❌ [고난도 함정!] 제로 탄산음료의 인공감미료는 단맛 중독을 유지시키고 치아 부식을 일으키며, 가공음료는 순수한 물을 결코 대체할 수 없습니다!"
+            },
+            {
+              id: "q2_wrong",
+              name: "갈증 날 때마다 시원한 대용량 콜라와 과일맛 탄산음료 들이켜기",
+              isHealthy: false,
+              feedback: "❌ 500ml 탄산음료 한 병에는 각설탕 17개 분량의 당류가 들어 있어 당뇨병 위험을 폭증시킵니다!"
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      id: "shelf",
+      name: "편의점 야식 선반",
+      topic: "가공식품·나트륨 폭탄과 청소년 고혈압",
+      icon: "🍜",
+      shortDesc: "자극적인 주황빛 조명 아래 나트륨 소금 결정이 가득 쌓인 편의점 매대...",
+      problemTitle: "문제 4: 즉석식품/편의점 음식과 청소년 고혈압 (Sodium & Processed Food)",
+      
+      storyText: "선반 위 라면 스프 봉지들이 사악하게 웃으며 유혹합니다.\n'공부하느라 밤늦게 출출하지? 맵고 짠 라면에 삼각김밥, 핫바를 전자레인지에 2분만 돌려! 국물까지 싹 비우면 스트레스가 싹 풀릴걸?'",
+      
+      curriculum: {
+        cause: "학원 시간과 바쁜 일상으로 간편한 편의점 식품(컵라면, 떡볶이, 튀김, 가공 햄)에 의존. 맵고 짠 자극적인 음식 선호.",
+        impact: "라면 한 그릇에 하루 나트륨 권장량(2,000mg)의 80~100% 육박. 과잉 나트륨은 혈액 내 수분을 끌어들여 혈관 압력을 급상승시키며, 중학생 시기 '소아·청소년 본태성 고혈압'과 신장 질환, 부종, 소변 중 칼슘 배출로 골다공증 위험 증가.",
+        solution: "라면 조리 시 스프는 1/2만 넣고 국물은 남기기! 영양성분표에서 나트륨(mg) 함량 비교하여 낮은 것 고르기. 이미 섭취했다면 나트륨 배출을 촉진하는 '칼륨(K)'이 풍부한 식품(바나나, 토마토, 시금치, 감자, 우유)을 함께 섭취하기."
+      },
+
+      questions: [
+        {
+          step: 1,
+          stepTitle: "1단계: 나트륨 과다 섭취와 청소년 혈관 질환 이해",
+          question: "컵라면 등 편의점 즉석식품의 과도한 나트륨(소금)이 혈관에 미치는 영향으로 옳은 것은?",
+          choices: [
+            {
+              id: "q1_correct",
+              name: "혈액 속으로 수분을 끌어들여 혈관 내부 압력을 급상승시키며, 청소년 본태성 고혈압을 유발한다.",
+              isHealthy: true,
+              feedback: "✨ 1단계 정답! 과잉 나트륨은 혈관 벽을 수축시키고 혈액량을 늘려 혈압을 치솟게 하며, 신장에 심각한 과부하를 줍니다."
+            },
+            {
+              id: "q1_wrong1",
+              name: "나트륨은 혈관 벽을 깨끗하게 청소해 주어 혈압을 안정적으로 낮추어 준다.",
+              isHealthy: false,
+              feedback: "❌ 정반대의 위험한 상식! 나트륨은 혈관 압력을 높여 뇌출혈과 심장마비의 주원인이 되는 혈관 파괴자입니다!"
+            },
+            {
+              id: "q1_wrong2",
+              name: "성장기 청소년은 땀을 많이 흘리므로 하루 5,000mg 이상의 고나트륨을 먹어도 무해하다.",
+              isHealthy: false,
+              feedback: "❌ 청소년 하루 나트륨 권장량은 2,000mg 미만입니다. 고나트륨 식사는 뼈 속 칼슘까지 소변으로 배출시켜 성장을 방해합니다!"
+            }
+          ]
+        },
+        {
+          step: 2,
+          stepTitle: "2단계: 나트륨을 배출하는 칼륨(K) 식품과 조리법 선택",
+          question: "라면을 먹을 때 나트륨 피해를 최소화하고 체내 소금을 배출시키는 똑똑한 식사법은?",
+          choices: [
+            {
+              id: "q2_correct",
+              name: "스프는 1/2만 넣고 국물은 남기며, 나트륨 배출을 돕는 '칼륨(K)'이 풍부한 생토마토나 바나나를 곁들인다.",
+              isHealthy: true,
+              feedback: "✨ 구역 정화 성공! 라면 국물을 남기는 것만으로 나트륨의 절반을 줄이며, 칼륨(K)이 체내 나트륨을 소변으로 밀어내어 혈관을 지켜줍니다!",
+              talisman: "칼륨 정화의 부적 (나트륨 배출 & 깨끗한 혈관)"
+            },
+            {
+              id: "q2_tricky",
+              name: "매운맛이 없으니 안전할 거라 믿고, 짜장 컵라면 1개 + 가공 훈제 닭다리 + 절임 단무지를 세트로 먹는다.",
+              isHealthy: false,
+              feedback: "❌ [고난도 함정!] 맵지 않아도 짜장 소스와 가공육, 절임 단무지의 나트륨 합계는 2,100mg으로 하루 기준치를 즉각 초과합니다!"
+            },
+            {
+              id: "q2_wrong",
+              name: "불닭 볶음면에 짠 소시지를 넣고 밥과 국물까지 싹싹 비워 먹는다.",
+              isHealthy: false,
+              feedback: "❌ 1끼 나트륨이 3,000mg을 넘어서는 극단적인 혈관 파괴 식단입니다!"
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      id: "door",
+      name: "사슬로 봉인된 탈출문",
+      topic: "최종 관문: 균형 잡힌 영양 식단 (식품구성자전거)",
+      icon: "🚪",
+      shortDesc: "두꺼운 자물쇠와 가공식품 사슬로 굳게 닫혀 있는 부엌 탈출문...",
+      problemTitle: "최종 관문: 탈출의 열쇠, 균형 식단 바구니 완성!",
+      
+      storyText: "탈출문 앞을 거대한 '정크푸드 대마왕'이 막아섰습니다!\n'네가 모은 4개의 부적 따위... 내 강력한 편의점 세트 메뉴 한 방이면 무너진다! 진정한 건강 식단을 조합하지 못하면 넌 여기서 평생 야식의 노예가 된다!'",
+      
+      curriculum: {
+        cause: "특정 영양소만 편식하거나 고열량·저영양 식품에 편중된 식습관.",
+        impact: "성장기 청소년에게 필수적인 비타민, 무기질, 식이섬유 결핍 -> 면역력 저하, 만성 피로, 성장 지연.",
+        solution: "식품구성자전거의 6가지 식품군(곡류, 고기·생선·달걀·콩류, 채소류, 과일류, 우유·유제품류, 물)을 골고루 섭취하여 균형 잡힌 신체 에너지 완성하기!"
+      },
+
+      questions: [
+        {
+          step: 1,
+          stepTitle: "1단계: 식품구성자전거 6대 식품군 원리 파악",
+          question: "청소년기 균형 식단의 기본 원리인 '식품구성자전거'에 대한 올바른 설명은?",
+          choices: [
+            {
+              id: "q1_correct",
+              name: "6대 식품군(곡류, 고기·생선·달걀·콩류, 채소류, 과일류, 우유·유제품류, 물)을 매일 골고루 적정량 섭취해야 균형 성장이 가능하다.",
+              isHealthy: true,
+              feedback: "✨ 1단계 정답! 식품구성자전거는 다양한 식품군을 균형 있게 섭취하고 충분한 수분 섭취와 규칙적인 운동의 중요성을 상징합니다."
+            },
+            {
+              id: "q1_tricky",
+              name: "살을 빼기 위해서는 뇌 에너지원인 곡류(밥)와 뼈를 구성하는 우유(유제품)를 식단에서 완전히 제외해야 한다.",
+              isHealthy: false,
+              feedback: "❌ [고난도 함정!] 특정 영양소를 배제하는 다이어트는 뇌 기능 장애와 골격 형성 부진을 낳는 위험한 불균형 식단입니다!"
+            },
+            {
+              id: "q1_wrong",
+              name: "단백질 보충제 가루만 단일 영양소로 하루 종일 마시는 것이 가장 완벽한 성장기 식단이다.",
+              isHealthy: false,
+              feedback: "❌ 단일 영양소 과잉은 간과 신장에 치명적인 무리를 주고 비타민·무기질 결핍을 유발합니다!"
+            }
+          ]
+        },
+        {
+          step: 2,
+          stepTitle: "2단계: 대탈출을 여는 영양 균형 식단 바구니 완성",
+          question: "부엌의 저주를 완전히 풀고 탈출할 최후의 '6대 식품군 균형 식단 바구니'는?",
+          choices: [
+            {
+              id: "q2_correct",
+              name: "현미잡곡밥(곡류) + 고등어구이(단백질) + 시금치나물(채소) + 사과(과일) + 우유 1잔(유제품) & 맑은 물",
+              isHealthy: true,
+              feedback: "🎉 대탈출 성공! 6대 식품군이 완벽한 조화를 이루었습니다! 눈부신 영양의 빛이 부엌의 어둠과 저주를 완전히 산산조각 냅니다!",
+              talisman: "최후의 균형 영양 열쇠 (식품구성자전거 완성)"
+            },
+            {
+              id: "q2_tricky",
+              name: "닭가슴살 샐러드만 가득 먹고, 밥(곡류)과 우유(유제품)는 일절 먹지 않는 극단적 저탄고단 식단",
+              isHealthy: false,
+              feedback: "❌ [고난도 함정!] 곡류와 유제품이 배제되어 뇌의 에너지원과 칼슘이 결핍된 불균형 식단입니다!"
+            },
+            {
+              id: "q2_wrong",
+              name: "삼각김밥 2개 + 튀김 컵라면 1개 + 탄산음료 + 초코바 (고열량 저영양 가공식품 올인)",
+              isHealthy: false,
+              feedback: "❌ 비타민과 무기질이 전무한 최악의 편의점 정크푸드 식단입니다!"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+
+  // 탐정 영양 수첩 요약 정리 데이터 (수업 정리용 마스터시트)
+  notebookSummary: [
+    {
+      topic: "1. 아침결식",
+      icon: "🌅",
+      cause: "늦잠, 등교 시간 부족, 다이어트 오해",
+      impact: "뇌 에너지(포도당) 결핍으로 집중력/학습 저하, 점심 폭식 유발, 위염 위험",
+      solution: "간단하더라도 통곡물, 달걀, 바나나, 우유 등 복합탄수화물+단백질 섭취 습관화"
+    },
+    {
+      topic: "2. 섭식장애 (거식·폭식·마구먹기)",
+      icon: "⚖️",
+      cause: "대중매체의 왜곡된 마른 몸매 미화, 외모 강박, 심리적 불안",
+      impact: "영양실조, 탈모, 무월경, 성장 지연(거식) / 식도염, 치아 부식(폭식) / 고도비만(마구먹기)",
+      solution: "있는 그대로의 내 몸 긍정하기, 삼시세끼 규칙적 식사, 필요 시 전문가 상담"
+    },
+    {
+      topic: "3. 탄산음료 & 과당 섭취",
+      icon: "🥤",
+      cause: "물 대신 탄산/주스 습관화, 패스트푸드 섭취 시 곁들이기",
+      impact: "급격한 혈당 스파이크, 인슐린 저항성 초래, 청소년 제2형 당뇨병, 충치, 골밀도 저하",
+      solution: "하루 물 1.5~2L 및 보리차 음용, 영양성분표에서 당류(g) 확인하는 습관"
+    },
+    {
+      topic: "4. 편의점·즉석식품 (고나트륨)",
+      icon: "🧂",
+      cause: "바쁜 학원 생활로 컵라면/가공식품 의존, 자극적인 맛 선호",
+      impact: "나트륨 과다로 혈압 상승(청소년 본태성 고혈압), 신장 손상, 칼슘 배출로 뼈 성장 방해",
+      solution: "라면 스프 줄이고 국물 남기기, 칼륨이 풍부한 채소·바나나·토마토·우유 섭취"
+    },
+    {
+      topic: "5. 올바른 균형 식단",
+      icon: "🚲",
+      cause: "고열량·저영양 식품 편식, 가공식품 과다",
+      impact: "필수 비타민·무기질·식이섬유 결핍, 면역력 저하",
+      solution: "식품구성자전거의 6가지 식품군을 골고루 섭취하여 균형 잡힌 성장 에너지 완성"
+    }
+  ]
+};
+
+if (typeof window !== 'undefined') {
+  window.ESCAPE_GAME_DATA = ESCAPE_GAME_DATA;
+}
+
+/**
+ * Web Audio API 기반 공포 방탈출 오디오 시스템
+ * 별도의 외부 음원 파일 없이 브라우저 자체 음파 합성으로 동작
+ * (학교 교실 환경에서도 100% 지연 및 방화벽 차단 없이 재생)
+ */
+
+class HorrorAudioEngine {
+  constructor() {
+    this.ctx = null;
+    this.isMuted = false;
+    this.ambientOsc = null;
+    this.ambientGain = null;
+    this.heartbeatTimer = null;
+    this.heartbeatInterval = 1200; // ms
+    this.initAudioUnlock();
+  }
+
+  initAudioUnlock() {
+    const unlock = () => {
+      if (!this.ctx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx) this.ctx = new AudioCtx();
+      }
+      if (this.ctx && this.ctx.state === 'suspended') {
+        this.ctx.resume();
+      }
+      document.removeEventListener('click', unlock);
+      document.removeEventListener('keydown', unlock);
+      document.removeEventListener('touchstart', unlock);
+    };
+
+    document.addEventListener('click', unlock, { once: true });
+    document.addEventListener('keydown', unlock, { once: true });
+    document.addEventListener('touchstart', unlock, { once: true });
+  }
+
+  ensureContext() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+    return this.ctx;
+  }
+
+  toggleMute() {
+    this.isMuted = !this.isMuted;
+    if (this.isMuted) {
+      this.stopAmbient();
+      this.stopHeartbeat();
+    }
+    return this.isMuted;
+  }
+
+  /**
+   * 스산한 부엌 배경 앰비언스 드론음 시작
+   */
+  startAmbient() {
+    if (this.isMuted) return;
+    const ctx = this.ensureContext();
+    if (!ctx || this.ambientOsc) return;
+
+    try {
+      const now = ctx.currentTime;
+      this.ambientOsc = ctx.createOscillator();
+      this.ambientGain = ctx.createGain();
+
+      // 저음의 으스스한 톱니파 + 로우패스 필터
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 140;
+
+      this.ambientOsc.type = 'sawtooth';
+      this.ambientOsc.frequency.setValueAtTime(55, now); // A1 note
+
+      // 서서히 페이드인
+      this.ambientGain.gain.setValueAtTime(0.001, now);
+      this.ambientGain.gain.linearRampToValueAtTime(0.08, now + 3);
+
+      this.ambientOsc.connect(filter);
+      filter.connect(this.ambientGain);
+      this.ambientGain.connect(ctx.destination);
+
+      this.ambientOsc.start(now);
+    } catch (e) {
+      console.warn('Ambient audio start prevented', e);
+    }
+  }
+
+  stopAmbient() {
+    if (this.ambientOsc) {
+      try {
+        this.ambientOsc.stop();
+        this.ambientOsc.disconnect();
+      } catch (e) {}
+      this.ambientOsc = null;
+    }
+  }
+
+  /**
+   * 심장 박동음 (정신력이 낮을수록 빠르게 뜀)
+   */
+  playHeartbeat() {
+    if (this.isMuted) return;
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+
+    // 쿵 (제1 심음)
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(80, now);
+    osc1.frequency.exponentialRampToValueAtTime(40, now + 0.12);
+    gain1.gain.setValueAtTime(0.4, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.14);
+
+    // 쾅 (제2 심음)
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(70, now + 0.15);
+    osc2.frequency.exponentialRampToValueAtTime(35, now + 0.3);
+    gain2.gain.setValueAtTime(0.35, now + 0.15);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.15);
+    osc2.stop(now + 0.32);
+  }
+
+  setSanityHeartbeatRate(sanity) {
+    if (sanity <= 35) {
+      this.heartbeatInterval = 650; // 매우 빠름 (위험)
+    } else if (sanity <= 60) {
+      this.heartbeatInterval = 950;
+    } else {
+      this.heartbeatInterval = 1400; // 안정
+    }
+  }
+
+  startHeartbeatLoop() {
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+    this.heartbeatTimer = setInterval(() => {
+      this.playHeartbeat();
+    }, this.heartbeatInterval);
+  }
+
+  stopHeartbeat() {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+  }
+
+  /**
+   * 단서 클릭 시 삐걱거리는 문 / 금속 상호작용음
+   */
+  playCreak() {
+    if (this.isMuted) return;
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(110, now);
+    osc.frequency.linearRampToValueAtTime(160, now + 0.08);
+    osc.frequency.linearRampToValueAtTime(80, now + 0.2);
+
+    gain.gain.setValueAtTime(0.18, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.22);
+  }
+
+  /**
+   * 정크푸드/나쁜 선택 시: 불협화음 공포 점프스케어 찌르는 음
+   */
+  playJumpScareSting() {
+    if (this.isMuted) return;
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    // 불협화음 삼음 (C#4, D4, G#4)
+    const freqs = [277.18, 293.66, 415.30];
+
+    freqs.forEach(freq => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.7, now + 0.35);
+
+      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.4);
+    });
+  }
+
+  /**
+   * 건강 식품/올바른 선택 시: 성스러운 정화의 종소리 (Sanctuary Chime)
+   */
+  playPurificationChime() {
+    if (this.isMuted) return;
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    // 맑은 펜타토닉 아르페지오 (C5, E5, G5, B5, C6)
+    const notes = [523.25, 659.25, 783.99, 987.77, 1046.50];
+
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+
+      const startTime = now + idx * 0.07;
+      gain.gain.setValueAtTime(0.3, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + 0.5);
+    });
+  }
+
+  /**
+   * 탈출문 사슬 풀리는 소리
+   */
+  playChainRattle() {
+    if (this.isMuted) return;
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    for (let i = 0; i < 4; i++) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(300 + Math.random() * 200, now + i * 0.08);
+
+      gain.gain.setValueAtTime(0.2, now + i * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.12);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + i * 0.08);
+      osc.stop(now + i * 0.08 + 0.12);
+    }
+  }
+
+  /**
+   * 최종 탈출 성공 승리 팡파르
+   */
+  playVictoryFanfare() {
+    if (this.isMuted) return;
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    this.stopAmbient();
+    this.stopHeartbeat();
+
+    const now = ctx.currentTime;
+    const melody = [
+      { f: 523.25, d: 0.15 }, // C5
+      { f: 659.25, d: 0.15 }, // E5
+      { f: 783.99, d: 0.15 }, // G5
+      { f: 1046.50, d: 0.45 } // C6
+    ];
+
+    let t = now;
+    melody.forEach((note) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = note.f;
+
+      gain.gain.setValueAtTime(0.35, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + note.d);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + note.d);
+
+      t += note.d * 0.95;
+    });
+  }
+
+  /**
+   * 게임 오버 사운드
+   */
+  playGameOver() {
+    if (this.isMuted) return;
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    this.stopAmbient();
+    this.stopHeartbeat();
+
+    const now = ctx.currentTime;
+    const notes = [220, 207.65, 196, 174.61]; // A3, G#3, G3, F3
+
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.value = freq;
+
+      const startTime = now + idx * 0.25;
+      gain.gain.setValueAtTime(0.3, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.4);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(startTime);
+      osc.stop(startTime + 0.4);
+    });
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.horrorAudio = new HorrorAudioEngine();
+}
+
+/**
+ * 탐정 영양 수첩 및 수업 내용 정리 (Detective Nutrition Notebook & Worksheet Guide) 모듈
+ * 수업이 끝난 후 학생들이 학습지를 체계적으로 정리할 수 있는 마스터시트 시스템
+ */
+
+class NutritionNotebook {
+  constructor() {
+    this.modal = document.getElementById('notebookModal');
+    this.container = document.getElementById('notebookContent');
+    this.badgeCountEl = document.getElementById('unlockedCount');
+    this.unlockedAreas = new Set();
+    this.currentViewMode = 'table'; // 'table' (학습지 요약표) or 'cards' (구역별 카드)
+    this.forceShowAll = false; // 학습지 정리용 전체 공개 모드
+
+    this.initEvents();
+  }
+
+  initEvents() {
+    const openBtn = document.getElementById('openNotebookBtn');
+    if (openBtn) {
+      openBtn.addEventListener('click', () => this.open(false));
+    }
+
+    const closeBtns = document.querySelectorAll('.close-notebook-btn');
+    closeBtns.forEach(btn => {
+      btn.addEventListener('click', () => this.close());
+    });
+
+    if (this.modal) {
+      this.modal.addEventListener('click', (e) => {
+        if (e.target === this.modal) this.close();
+      });
+    }
+  }
+
+  open(forceShowAll = false) {
+    if (!this.modal) return;
+    if (forceShowAll) {
+      this.forceShowAll = true;
+    }
+    this.render();
+    this.modal.classList.add('show');
+  }
+
+  close() {
+    if (!this.modal) return;
+    this.modal.classList.remove('show');
+  }
+
+  unlock(areaId) {
+    this.unlockedAreas.add(areaId);
+    if (this.badgeCountEl) {
+      this.badgeCountEl.textContent = `${this.unlockedAreas.size}/5`;
+    }
+  }
+
+  toggleViewMode(mode) {
+    this.currentViewMode = mode;
+    this.render();
+  }
+
+  toggleForceShowAll() {
+    this.forceShowAll = !this.forceShowAll;
+    this.render();
+    if (window.game) {
+      window.game.showToast(
+        this.forceShowAll ? '🔓 학습지 작성을 위해 전체 수업 내용이 공개되었습니다.' : '🔒 게임 진행도 모드로 전환되었습니다.',
+        'info'
+      );
+    }
+  }
+
+  copyWorksheetText() {
+    if (!window.ESCAPE_GAME_DATA) return;
+    const areas = window.ESCAPE_GAME_DATA.areas;
+    let text = `[중학교 1학년 기술·가정: 청소년기 식생활 문제 정리 학습지]\n\n`;
+    areas.forEach((area, i) => {
+      text += `■ ${i + 1}. ${area.topic} (${area.problemTitle})\n`;
+      text += ` - [발생 원인]: ${area.curriculum.cause}\n`;
+      text += ` - [미치는 영향]: ${area.curriculum.impact}\n`;
+      text += ` - [해결 및 실천]: ${area.curriculum.solution}\n\n`;
+    });
+
+    navigator.clipboard.writeText(text).then(() => {
+      if (window.game) {
+        window.game.showToast('📋 학습지 정리 내용이 클립보드에 복사되었습니다! (Ctrl+V로 붙여넣기 가능)', 'success');
+      } else {
+        alert('📋 학습지 내용이 복사되었습니다!');
+      }
+    }).catch(() => {
+      alert('복사 권한이 없어 수동으로 내용을 확인해 주세요.');
+    });
+  }
+
+  render() {
+    if (!this.container || !window.ESCAPE_GAME_DATA) return;
+    this.container.innerHTML = '';
+
+    const areas = window.ESCAPE_GAME_DATA.areas;
+    const isFullRevealed = this.forceShowAll || this.unlockedAreas.size === 5;
+
+    // 상단 네비게이션 & 학습지 조작 툴바
+    const toolbar = document.createElement('div');
+    toolbar.className = 'worksheet-toolbar';
+    toolbar.innerHTML = `
+      <div class="toolbar-left">
+        <button type="button" class="mode-tab-btn ${this.currentViewMode === 'table' ? 'active' : ''}" id="viewTableBtn">
+          📋 학습지 요약표 보기
+        </button>
+        <button type="button" class="mode-tab-btn ${this.currentViewMode === 'cards' ? 'active' : ''}" id="viewCardsBtn">
+          🗂️ 단서별 상세 카드 보기
+        </button>
+      </div>
+      <div class="toolbar-right">
+        <button type="button" class="action-subtle-btn" id="toggleAllBtn">
+          ${isFullRevealed ? '🔒 게임 진행도 기준 보기' : '🔓 전체 정답 공개 (학습지 작성용)'}
+        </button>
+        <button type="button" class="action-subtle-btn btn-copy" id="copyWorksheetBtn" title="학습지 텍스트 전체 복사">
+          📋 텍스트 복사
+        </button>
+      </div>
+    `;
+    this.container.appendChild(toolbar);
+
+    // 이벤트 바인딩
+    toolbar.querySelector('#viewTableBtn').addEventListener('click', () => this.toggleViewMode('table'));
+    toolbar.querySelector('#viewCardsBtn').addEventListener('click', () => this.toggleViewMode('cards'));
+    toolbar.querySelector('#toggleAllBtn').addEventListener('click', () => this.toggleForceShowAll());
+    toolbar.querySelector('#copyWorksheetBtn').addEventListener('click', () => this.copyWorksheetText());
+
+    // 상단 진행 배너
+    const progressBanner = document.createElement('div');
+    progressBanner.className = 'notebook-progress-banner';
+    progressBanner.innerHTML = `
+      <div class="progress-title">
+        📝 중1 기술·가정: 청소년기 식생활 문제 핵심 정리 
+        <span class="badge-solved">(${this.unlockedAreas.size} / 5개 구역 분석 완료)</span>
+      </div>
+      <p class="progress-sub">
+        수업이 끝난 후 아래 정리된 내용을 바탕으로 <strong>개인 학습지</strong>를 작성하세요.
+        ${!isFullRevealed ? ' (오른쪽 상단의 [🔓 전체 정답 공개]를 누르면 모든 구역의 해설을 볼 수 있습니다)' : ' <strong>[전체 내용 공개 모드]</strong>'}
+      </p>
+    `;
+    this.container.appendChild(progressBanner);
+
+    // 뷰 모드에 따른 렌더링
+    if (this.currentViewMode === 'table') {
+      this.renderTableView(areas, isFullRevealed);
+    } else {
+      this.renderCardsView(areas, isFullRevealed);
+    }
+  }
+
+  renderTableView(areas, isFullRevealed) {
+    const tableWrap = document.createElement('div');
+    tableWrap.className = 'worksheet-table-wrap';
+
+    const rows = areas.map((area, idx) => {
+      const isUnlocked = isFullRevealed || this.unlockedAreas.has(area.id);
+
+      if (isUnlocked) {
+        return `
+          <tr>
+            <td class="ws-topic-cell">
+              <span class="ws-icon">${area.icon}</span>
+              <strong>${idx + 1}. ${area.topic}</strong>
+              <span class="ws-badge-ok">정화 완료</span>
+            </td>
+            <td class="ws-cause-cell">${area.curriculum.cause}</td>
+            <td class="ws-impact-cell">${area.curriculum.impact}</td>
+            <td class="ws-sol-cell">${area.curriculum.solution}</td>
+          </tr>
+        `;
+      } else {
+        return `
+          <tr class="ws-row-locked">
+            <td class="ws-topic-cell">
+              <span class="ws-icon">🔒</span>
+              <strong>${idx + 1}. ${area.topic}</strong>
+              <span class="ws-badge-lock">미해결</span>
+            </td>
+            <td colspan="3" class="ws-locked-content">
+              부엌의 <strong>[${area.name}]</strong> 단서를 풀거나, 상단의 <strong>[🔓 전체 정답 공개]</strong> 버튼을 누르면 학습지 정리 내용이 표시됩니다.
+            </td>
+          </tr>
+        `;
+      }
+    }).join('');
+
+    tableWrap.innerHTML = `
+      <table class="worksheet-summary-table">
+        <thead>
+          <tr>
+            <th style="width: 18%;">식생활 문제 영역</th>
+            <th style="width: 26%;">🔴 발생 원인 (Cause)</th>
+            <th style="width: 28%;">⚠️ 청소년 몸에 미치는 영향 (Impact)</th>
+            <th style="width: 28%;">💚 올바른 건강 식품 및 실천 (Solution)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    `;
+
+    this.container.appendChild(tableWrap);
+  }
+
+  renderCardsView(areas, isFullRevealed) {
+    const cardsContainer = document.createElement('div');
+    cardsContainer.className = 'notebook-cards-grid';
+
+    areas.forEach((area, idx) => {
+      const isUnlocked = isFullRevealed || this.unlockedAreas.has(area.id);
+      const card = document.createElement('div');
+      card.className = `notebook-card ${isUnlocked ? 'unlocked' : 'locked'}`;
+
+      if (isUnlocked) {
+        card.innerHTML = `
+          <div class="notebook-card-header">
+            <div class="header-left">
+              <span class="card-icon">${area.icon}</span>
+              <div class="card-title-wrap">
+                <span class="area-tag">[단서 #${idx + 1}] ${area.name}</span>
+                <h3 class="card-problem-title">${area.problemTitle}</h3>
+              </div>
+            </div>
+            <span class="status-cleared-badge">✅ 정리 완료</span>
+          </div>
+          
+          <div class="notebook-card-body">
+            <div class="notebook-section cause">
+              <div class="section-label">🔴 발생 원인 (Cause)</div>
+              <p class="section-text">${area.curriculum.cause}</p>
+            </div>
+
+            <div class="notebook-section impact">
+              <div class="section-label">⚠️ 청소년 몸에 미치는 악영향 (Impact)</div>
+              <p class="section-text">${area.curriculum.impact}</p>
+            </div>
+
+            <div class="notebook-section solution">
+              <div class="section-label">💚 올바른 건강 식품 및 해결책 (Healthy Solution)</div>
+              <p class="section-text">${area.curriculum.solution}</p>
+            </div>
+          </div>
+        `;
+      } else {
+        card.innerHTML = `
+          <div class="notebook-card-header locked-header">
+            <div class="header-left">
+              <span class="card-icon">🔒</span>
+              <div class="card-title-wrap">
+                <span class="area-tag">[미해결 단서 #${idx + 1}]</span>
+                <h3 class="card-problem-title">${area.topic}</h3>
+              </div>
+            </div>
+            <span class="status-locked-badge">미해결</span>
+          </div>
+          <div class="locked-body">
+            <p>부엌의 <strong>[${area.name}]</strong> 구역을 조사하거나, 상단의 <strong>[🔓 전체 정답 공개]</strong> 버튼을 누르면 학습지 정리 내용이 열립니다!</p>
+          </div>
+        `;
+      }
+
+      cardsContainer.appendChild(card);
+    });
+
+    this.container.appendChild(cardsContainer);
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.NutritionNotebook = NutritionNotebook;
+}
+
+/**
+ * 공포의 부엌 방탈출 메인 게임 컨트롤러
+ */
+
+class EscapeRoomGame {
+  constructor() {
+    this.sanity = 100;
+    this.maxSanity = 100;
+    this.totalTime = 60; // 1분 (60초 타임어택)
+    this.timeLeft = this.totalTime;
+    this.gameState = 'INIT'; // INIT, PLAYING, VICTORY, GAMEOVER
+    this.solvedAreas = new Set();
+    this.talismans = [];
+    this.currentArea = null;
+
+    this.notebook = window.NutritionNotebook ? new window.NutritionNotebook() : null;
+
+    this.initDOMElements();
+    this.initEventListeners();
+    this.updateStatusUI();
+  }
+
+  initDOMElements() {
+    this.sanityBarEl = document.getElementById('sanityBar');
+    this.sanityTextEl = document.getElementById('sanityText');
+    this.timerTextEl = document.getElementById('timerText');
+    this.talismanSlotsEl = document.getElementById('talismanSlots');
+    this.investigateModalEl = document.getElementById('investigateModal');
+    this.investigateContentEl = document.getElementById('investigateContent');
+    this.startModalEl = document.getElementById('introModal');
+    this.victoryModalEl = document.getElementById('victoryModal');
+    this.gameOverModalEl = document.getElementById('gameOverModal');
+    this.vignetteOverlayEl = document.getElementById('vignetteOverlay');
+    this.soundToggleBtn = document.getElementById('soundToggleBtn');
+    this.feedbackToastEl = document.getElementById('actionToast');
+
+    // 탈출 명단 (랭킹) 요소
+    this.leaderboardModalEl = document.getElementById('leaderboardModal');
+    this.leaderboardContainerEl = document.getElementById('leaderboardTableContainer');
+    this.playerNameInputEl = document.getElementById('playerNameInput');
+    this.saveScoreBtnEl = document.getElementById('saveScoreBtn');
+    this.registerSuccessMsgEl = document.getElementById('registerSuccessMsg');
+    this.victoryTimeTakenEl = document.getElementById('victoryTimeTaken');
+    this.victorySanityEl = document.getElementById('victorySanity');
+    this.playerTimeBadgeEl = document.getElementById('playerTimeBadge');
+    this.praiseQuoteTextEl = document.getElementById('praiseQuoteText');
+  }
+
+  initEventListeners() {
+    // 게임 시작 버튼
+    const startBtn = document.getElementById('startGameBtn');
+    if (startBtn) {
+      startBtn.addEventListener('click', () => this.startGame());
+    }
+
+    // 재도전 버튼
+    const restartBtns = document.querySelectorAll('.restart-game-btn');
+    restartBtns.forEach(btn => {
+      btn.addEventListener('click', () => this.startGame());
+    });
+
+    // 사운드 토글 버튼
+    if (this.soundToggleBtn) {
+      this.soundToggleBtn.addEventListener('click', () => {
+        if (window.horrorAudio) {
+          const isMuted = window.horrorAudio.toggleMute();
+          this.soundToggleBtn.innerHTML = isMuted 
+            ? '🔇 <span class="btn-text">음소거</span>' 
+            : '🔊 <span class="btn-text">소리 켬</span>';
+        }
+      });
+    }
+
+    // 부엌 단서 핫스팟 클릭 이벤트
+    document.querySelectorAll('.kitchen-hotspot').forEach(spot => {
+      spot.addEventListener('click', (e) => {
+        const areaId = e.currentTarget.dataset.area;
+        this.inspectArea(areaId);
+      });
+    });
+
+    // 조사 모달 닫기
+    document.querySelectorAll('.close-investigate-btn').forEach(btn => {
+      btn.addEventListener('click', () => this.closeInvestigate());
+    });
+
+    if (this.investigateModalEl) {
+      this.investigateModalEl.addEventListener('click', (e) => {
+        if (e.target === this.investigateModalEl) this.closeInvestigate();
+      });
+    }
+
+    // 탈출 명단 모달 열기/닫기
+    const openLeaderboardBtn = document.getElementById('openLeaderboardBtn');
+    if (openLeaderboardBtn) {
+      openLeaderboardBtn.addEventListener('click', () => this.openLeaderboard());
+    }
+
+    const viewLeaderboardFromVictoryBtn = document.getElementById('viewLeaderboardFromVictoryBtn');
+    if (viewLeaderboardFromVictoryBtn) {
+      viewLeaderboardFromVictoryBtn.addEventListener('click', () => this.openLeaderboard());
+    }
+
+    document.querySelectorAll('.close-leaderboard-btn').forEach(btn => {
+      btn.addEventListener('click', () => this.closeLeaderboard());
+    });
+
+    if (this.leaderboardModalEl) {
+      this.leaderboardModalEl.addEventListener('click', (e) => {
+        if (e.target === this.leaderboardModalEl) this.closeLeaderboard();
+      });
+    }
+
+    // 이름 등록 버튼 및 엔터키 입력
+    if (this.saveScoreBtnEl) {
+      this.saveScoreBtnEl.addEventListener('click', () => this.handleScoreSubmit());
+    }
+    if (this.playerNameInputEl) {
+      this.playerNameInputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') this.handleScoreSubmit();
+      });
+    }
+
+    // 교사용 명단 초기화
+    const resetLeaderboardBtn = document.getElementById('resetLeaderboardBtn');
+    if (resetLeaderboardBtn) {
+      resetLeaderboardBtn.addEventListener('click', () => this.resetLeaderboard());
+    }
+
+    // 손전등 마우스 추적 (공포 분위기 라이팅)
+    const flashlight = document.getElementById('flashlightBeam');
+    if (flashlight) {
+      window.addEventListener('pointermove', (e) => {
+        flashlight.style.setProperty('--cursor-x', `${e.clientX}px`);
+        flashlight.style.setProperty('--cursor-y', `${e.clientY}px`);
+      });
+    }
+  }
+
+  startGame() {
+    this.sanity = 100;
+    this.timeLeft = this.totalTime;
+    this.solvedAreas.clear();
+    this.talismans = [];
+    this.gameState = 'PLAYING';
+
+    if (this.startModalEl) this.startModalEl.classList.remove('show');
+    if (this.victoryModalEl) this.victoryModalEl.classList.remove('show');
+    if (this.gameOverModalEl) this.gameOverModalEl.classList.remove('show');
+
+    // 핫스팟 정화 상태 초기화
+    document.querySelectorAll('.kitchen-hotspot').forEach(spot => {
+      spot.classList.remove('purified');
+    });
+
+    // 오디오 시작
+    if (window.horrorAudio) {
+      window.horrorAudio.startAmbient();
+      window.horrorAudio.startHeartbeatLoop();
+    }
+
+    // 타이머 인터벌
+    clearInterval(this.gameClockTimer);
+    this.gameClockTimer = setInterval(() => {
+      this.tick();
+    }, 1000);
+
+    this.updateStatusUI();
+    this.showToast('🔦 손전등으로 부엌 구석구석의 단서를 조사하세요!', 'info');
+  }
+
+  tick() {
+    if (this.gameState !== 'PLAYING') return;
+
+    this.timeLeft--;
+    this.updateTimerDisplay();
+
+    if (this.timeLeft <= 0) {
+      this.triggerGameOver('⏱️ 1분 시간 초과! 60초 안에 부엌의 저주를 풀지 못해 어둠에 갇혔습니다... 다시 도전해 보세요!');
+    }
+  }
+
+  inspectArea(areaId) {
+    if (this.gameState !== 'PLAYING') return;
+
+    const areaData = window.ESCAPE_GAME_DATA.areas.find(a => a.id === areaId);
+    if (!areaData) return;
+
+    if (window.horrorAudio) {
+      window.horrorAudio.playCreak();
+    }
+
+    // 탈출문(door)의 경우
+    if (areaId === 'door') {
+      if (this.solvedAreas.has('door') || this.solvedAreas.size === 5) {
+        this.triggerVictory();
+        return;
+      }
+      if (this.solvedAreas.size < 4) {
+        this.showDoorLockedPrompt();
+        return;
+      }
+    }
+
+    this.currentArea = areaData;
+    this.currentQuestionStep = 0;
+    this.renderInvestigateModal(areaData);
+    if (this.investigateModalEl) {
+      this.investigateModalEl.classList.add('show');
+    }
+  }
+
+  showDoorLockedPrompt() {
+    if (window.horrorAudio) window.horrorAudio.playChainRattle();
+    this.showToast(`🔒 탈출문 봉인이 굳건합니다! 4개 구역 중 ${4 - this.solvedAreas.size}곳의 단서를 더 풀어야 합니다!`, 'warning');
+    this.triggerScreenShake();
+  }
+
+  renderInvestigateModal(area) {
+    if (!this.investigateContentEl) return;
+    const isAlreadySolved = this.solvedAreas.has(area.id);
+
+    if (isAlreadySolved) {
+      const talisman = area.questions && area.questions[1] 
+        ? area.questions[1].choices.find(c => c.isHealthy)?.talisman || '영양 부적'
+        : '영양 부적';
+
+      this.investigateContentEl.innerHTML = `
+        <div class="investigate-header">
+          <span class="investigate-icon">${area.icon}</span>
+          <div class="header-text-wrap">
+            <span class="investigate-badge">${area.topic}</span>
+            <h2 class="investigate-title">${area.name}</h2>
+          </div>
+        </div>
+        <div class="already-solved-banner">
+          <div style="font-size: 2rem;">✨</div>
+          <h3>이미 2단계 문제를 모두 통과해 정화된 구역입니다!</h3>
+          <p>획득한 부적: <strong>${talisman}</strong></p>
+          <p class="solved-tip">💡 탐정 영양 수첩(학습지 정리)에서 이 구역의 [원인 - 영향 - 해결방안]을 복습할 수 있습니다.</p>
+        </div>
+      `;
+      return;
+    }
+
+    this.renderQuestionStepView();
+  }
+
+  renderQuestionStepView() {
+    if (!this.investigateContentEl || !this.currentArea) return;
+    const area = this.currentArea;
+    const questions = area.questions || [];
+    const qIndex = this.currentQuestionStep;
+    const currentQ = questions[qIndex] || questions[0];
+
+    this.investigateContentEl.innerHTML = `
+      <div class="investigate-header">
+        <span class="investigate-icon">${area.icon}</span>
+        <div class="header-text-wrap">
+          <span class="investigate-badge">${area.topic}</span>
+          <h2 class="investigate-title">${area.name}</h2>
+        </div>
+      </div>
+
+      <div class="investigate-story-box">
+        <p class="story-speech">${area.storyText.replace(/\n/g, '<br>')}</p>
+      </div>
+
+      <!-- 2단계 문제 진행 표시기 -->
+      <div class="quiz-step-nav">
+        <div class="step-pill ${qIndex === 0 ? 'active' : 'completed'}">
+          ${qIndex > 0 ? '✅' : '1️⃣'} 문제 1: 원인·영향 파악
+        </div>
+        <span class="step-arrow">➔</span>
+        <div class="step-pill ${qIndex === 1 ? 'active' : 'upcoming'}">
+          2️⃣ 문제 2: 건강 식품 실천
+        </div>
+      </div>
+
+      <div class="quiz-question-box">
+        <span class="question-badge">${currentQ.stepTitle || `문제 ${qIndex + 1}`}</span>
+        <p class="question-text">${currentQ.question}</p>
+      </div>
+
+      <div class="choices-list" id="choicesContainer">
+        ${currentQ.choices.map((choice, i) => `
+          <button type="button" class="choice-card-btn" data-choice-id="${choice.id}">
+            <span class="choice-num">${i + 1}</span>
+            <span class="choice-name">${choice.name}</span>
+          </button>
+        `).join('')}
+      </div>
+
+      <div id="choiceFeedbackBox" class="choice-feedback-box hidden"></div>
+    `;
+
+    document.querySelectorAll('.choice-card-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const choiceId = e.currentTarget.dataset.choiceId;
+        this.handleChoice(choiceId);
+      });
+    });
+  }
+
+  handleChoice(choiceId) {
+    if (!this.currentArea || !this.currentArea.questions) return;
+    const currentQ = this.currentArea.questions[this.currentQuestionStep];
+    const choice = currentQ.choices.find(c => c.id === choiceId);
+    if (!choice) return;
+
+    const feedbackBox = document.getElementById('choiceFeedbackBox');
+    const choicesList = document.getElementById('choicesContainer');
+
+    if (choice.isHealthy) {
+      // ==========================================
+      // [정답 선택!]
+      // ==========================================
+      if (window.horrorAudio) window.horrorAudio.playPurificationChime();
+      this.modifySanity(10);
+      this.triggerFlashEffect('gold');
+
+      if (this.currentQuestionStep === 0) {
+        // 1단계 통과 -> 2단계 문제로 진행!
+        if (feedbackBox) {
+          feedbackBox.className = 'choice-feedback-box success-feedback';
+          feedbackBox.innerHTML = `
+            <div class="feedback-heading">🎉 1단계 정답 통과!</div>
+            <p class="feedback-desc">${choice.feedback}</p>
+            <p style="color: #fef08a; font-size: 0.9rem; margin-top: 6px;">💡 원인과 영향을 파악했습니다! 이제 2단계 실천 문제를 풀어 부적을 획득하세요.</p>
+            <button type="button" class="ctrl-btn btn-primary" id="nextQuestionStepBtn" style="margin-top: 12px; width: 100%; font-size: 1.05rem; padding: 12px;">
+              2단계 실천 문제 풀기 ➔
+            </button>
+          `;
+          feedbackBox.classList.remove('hidden');
+          if (choicesList) choicesList.classList.add('disabled-choices');
+
+          document.getElementById('nextQuestionStepBtn').addEventListener('click', () => {
+            this.currentQuestionStep = 1;
+            this.renderQuestionStepView();
+          });
+        }
+      } else {
+        // 2단계 통과 -> 구역 완전 정화!
+        this.solvedAreas.add(this.currentArea.id);
+        if (choice.talisman) {
+          this.talismans.push(choice.talisman);
+        }
+        if (this.notebook) this.notebook.unlock(this.currentArea.id);
+
+        const hotspotEl = document.querySelector(`.kitchen-hotspot[data-area="${this.currentArea.id}"]`);
+        if (hotspotEl) hotspotEl.classList.add('purified');
+
+        const isDoor = this.currentArea.id === 'door';
+        const allFiveSolved = this.solvedAreas.size === 5;
+
+        if (feedbackBox) {
+          feedbackBox.className = 'choice-feedback-box success-feedback';
+          const buttonText = (isDoor || allFiveSolved) ? '🚪 탈출문 열고 대탈출하기!' : '다음 단서 찾으러 가기';
+          feedbackBox.innerHTML = `
+            <div class="feedback-heading">🎉 2단계 실천 완료! 구역 정화 성공!</div>
+            <p class="feedback-desc">${choice.feedback}</p>
+            <div class="obtained-item">
+              <span>부적 획득:</span> <strong>${choice.talisman || '영양 부적'}</strong>
+            </div>
+            <button type="button" class="ctrl-btn btn-primary" id="confirmNextBtn" style="margin-top: 12px; width: 100%; font-size: 1.05rem; padding: 12px;">
+              ${buttonText}
+            </button>
+          `;
+          feedbackBox.classList.remove('hidden');
+          if (choicesList) choicesList.classList.add('disabled-choices');
+
+          document.getElementById('confirmNextBtn').addEventListener('click', () => {
+            this.closeInvestigate();
+            if (isDoor || this.solvedAreas.size === 5) {
+              setTimeout(() => this.triggerVictory(), 200);
+            }
+          });
+        }
+      }
+
+    } else {
+      // ==========================================
+      // [오답 선택! 공포의 페널티]
+      // ==========================================
+      if (window.horrorAudio) window.horrorAudio.playJumpScareSting();
+
+      this.modifySanity(-10);
+      this.triggerScreenShake();
+      this.triggerFlashEffect('red');
+      this.showToast(`⚠️ 오답 선택! 공포로 정신력이 10 깎였습니다!`, 'danger');
+
+      if (feedbackBox) {
+        feedbackBox.className = 'choice-feedback-box danger-feedback';
+        feedbackBox.innerHTML = `
+          <div class="feedback-heading">💀 저주받은 선택!</div>
+          <p class="feedback-desc">${choice.feedback}</p>
+          <p class="hint-text">💡 왜 이 답이 틀렸는지 고민해보고 올바른 보기를 다시 선택하세요!</p>
+        `;
+        feedbackBox.classList.remove('hidden');
+      }
+    }
+
+    this.updateStatusUI();
+  }
+
+  modifySanity(amount, triggerPulse = true) {
+    this.sanity = Math.max(0, Math.min(this.maxSanity, this.sanity + amount));
+    if (window.horrorAudio) {
+      window.horrorAudio.setSanityHeartbeatRate(this.sanity);
+    }
+    this.updateStatusUI();
+
+    if (triggerPulse && this.sanity <= 40) {
+      if (this.vignetteOverlayEl) {
+        this.vignetteOverlayEl.classList.add('heartbeat-pulse');
+        setTimeout(() => this.vignetteOverlayEl.classList.remove('heartbeat-pulse'), 800);
+      }
+    }
+
+    if (this.sanity <= 0) {
+      this.triggerGameOver('정신력이 바닥났습니다... 편의점 정크푸드의 저주가 당신을 지배했습니다.');
+    }
+  }
+
+  closeInvestigate() {
+    if (this.investigateModalEl) {
+      this.investigateModalEl.classList.remove('show');
+    }
+    const wasDoor = this.currentArea && this.currentArea.id === 'door';
+    this.currentArea = null;
+
+    // 5개 구역이 모두 정화되었거나 탈출문이 정화된 경우 즉시 대탈출 승리 화면 출력
+    if (this.solvedAreas.size === 5 || (wasDoor && this.solvedAreas.has('door'))) {
+      setTimeout(() => this.triggerVictory(), 250);
+    }
+  }
+
+  updateStatusUI() {
+    if (this.sanityBarEl) {
+      this.sanityBarEl.style.width = `${this.sanity}%`;
+      if (this.sanity <= 30) {
+        this.sanityBarEl.className = 'sanity-bar-fill critical';
+      } else if (this.sanity <= 60) {
+        this.sanityBarEl.className = 'sanity-bar-fill warning';
+      } else {
+        this.sanityBarEl.className = 'sanity-bar-fill normal';
+      }
+    }
+
+    if (this.sanityTextEl) {
+      this.sanityTextEl.textContent = `${this.sanity}%`;
+    }
+
+    if (this.talismanSlotsEl) {
+      this.talismanSlotsEl.innerHTML = '';
+      for (let i = 0; i < 5; i++) {
+        const slot = document.createElement('span');
+        slot.className = `talisman-icon ${i < this.solvedAreas.size ? 'active' : 'inactive'}`;
+        slot.textContent = i < this.solvedAreas.size ? '✨' : '⚪';
+        slot.title = i < this.talismans.length ? this.talismans[i] : '미획득 영양 부적';
+        this.talismanSlotsEl.appendChild(slot);
+      }
+    }
+
+    this.updateTimerDisplay();
+  }
+
+  updateTimerDisplay() {
+    if (!this.timerTextEl) return;
+    const clamped = Math.max(0, this.timeLeft);
+    const mins = Math.floor(clamped / 60);
+    const secs = clamped % 60;
+    this.timerTextEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+    if (this.timeLeft <= 15 && this.timeLeft > 0) {
+      this.timerTextEl.classList.add('urgent');
+    } else {
+      this.timerTextEl.classList.remove('urgent');
+    }
+  }
+
+  triggerVictory() {
+    this.gameState = 'VICTORY';
+    clearInterval(this.gameClockTimer);
+    if (this.investigateModalEl) {
+      this.investigateModalEl.classList.remove('show');
+    }
+    if (window.horrorAudio) window.horrorAudio.playVictoryFanfare();
+
+    // 탈출 소요 시간 계산
+    const secondsTaken = Math.max(1, this.totalTime - this.timeLeft);
+    const mins = Math.floor(secondsTaken / 60);
+    const secs = secondsTaken % 60;
+    this.lastRecord = {
+      secondsTaken,
+      timeStr: `${mins.toString().padStart(2, '0')}분 ${secs.toString().padStart(2, '0')}초`,
+      sanity: this.sanity
+    };
+
+    if (this.victoryTimeTakenEl) this.victoryTimeTakenEl.textContent = this.lastRecord.timeStr;
+    if (this.victorySanityEl) this.victorySanityEl.textContent = `${this.sanity}%`;
+    if (this.playerTimeBadgeEl) this.playerTimeBadgeEl.textContent = `${this.lastRecord.timeStr} 탈출`;
+
+    if (this.praiseQuoteTextEl) {
+      if (secondsTaken <= 45) {
+        this.praiseQuoteTextEl.innerHTML = `⚡ <strong>초고속 탈출! (${this.lastRecord.timeStr})</strong> "건강한 식생활을 실천할 수 있게 되었군요 ~" 👏`;
+      } else {
+        this.praiseQuoteTextEl.innerHTML = `"건강한 식생활을 실천할 수 있게 되었군요 ~"`;
+      }
+    }
+
+    if (this.playerNameInputEl) {
+      this.playerNameInputEl.value = '';
+      this.playerNameInputEl.disabled = false;
+    }
+    if (this.saveScoreBtnEl) this.saveScoreBtnEl.disabled = false;
+    if (this.registerSuccessMsgEl) this.registerSuccessMsgEl.classList.add('hidden');
+
+    if (this.victoryModalEl) {
+      this.victoryModalEl.classList.add('show');
+    }
+  }
+
+  handleScoreSubmit() {
+    if (!this.lastRecord) return;
+    const rawName = this.playerNameInputEl ? this.playerNameInputEl.value.trim() : '';
+    const name = rawName || '이름 없는 탐정';
+
+    const entry = {
+      id: Date.now(),
+      name,
+      secondsTaken: this.lastRecord.secondsTaken,
+      timeStr: this.lastRecord.timeStr,
+      sanity: this.lastRecord.sanity,
+      registeredAt: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    let list = this.getLeaderboardData();
+    list.push(entry);
+    // 빠른 탈출 시간 순(오름차순), 동점 시 잔여 정신력 높은 순(내림차순)
+    list.sort((a, b) => a.secondsTaken !== b.secondsTaken ? a.secondsTaken - b.secondsTaken : b.sanity - a.sanity);
+
+    localStorage.setItem('kitchen_escape_leaderboard', JSON.stringify(list));
+
+    if (this.registerSuccessMsgEl) {
+      this.registerSuccessMsgEl.classList.remove('hidden');
+    }
+    if (this.playerNameInputEl) this.playerNameInputEl.disabled = true;
+    if (this.saveScoreBtnEl) this.saveScoreBtnEl.disabled = true;
+
+    if (window.horrorAudio) window.horrorAudio.playPurificationChime();
+    this.showToast(`🏆 [${name}] 등록 완료! "건강한 식생활을 실천할 수 있게 되었군요 ~"`, 'success');
+
+    // 1초 후 탈출 명단 모달 자동 열기
+    setTimeout(() => this.openLeaderboard(), 800);
+  }
+
+  getLeaderboardData() {
+    try {
+      const data = localStorage.getItem('kitchen_escape_leaderboard');
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  openLeaderboard() {
+    const list = this.getLeaderboardData();
+    this.renderLeaderboardTable(list);
+    if (this.leaderboardModalEl) {
+      this.leaderboardModalEl.classList.add('show');
+    }
+  }
+
+  closeLeaderboard() {
+    if (this.leaderboardModalEl) {
+      this.leaderboardModalEl.classList.remove('show');
+    }
+  }
+
+  resetLeaderboard() {
+    if (confirm('⚠️ 다음 수업 반을 위해 등록된 모든 탈출 순위 명단을 초기화하시겠습니까?')) {
+      localStorage.removeItem('kitchen_escape_leaderboard');
+      this.renderLeaderboardTable([]);
+      this.showToast('🗑️ 탈출 명단이 깨끗하게 초기화되었습니다.', 'info');
+    }
+  }
+
+  renderLeaderboardTable(list) {
+    if (!this.leaderboardContainerEl) return;
+
+    if (!list || list.length === 0) {
+      this.leaderboardContainerEl.innerHTML = `
+        <div class="empty-leaderboard">
+          <div style="font-size: 2.5rem; margin-bottom: 8px;">📜</div>
+          <p>아직 등록된 탈출자가 없습니다.<br>부엌의 저주를 풀고 첫 번째 탈출 명예의 주인공이 되어보세요!</p>
+        </div>
+      `;
+      return;
+    }
+
+    const rows = list.map((item, index) => {
+      let rankBadge = `${index + 1}등`;
+      let rankClass = '';
+      if (index === 0) { rankBadge = '🥇 1등'; rankClass = 'rank-top-1'; }
+      else if (index === 1) { rankBadge = '🥈 2등'; rankClass = 'rank-top-2'; }
+      else if (index === 2) { rankBadge = '🥉 3등'; rankClass = 'rank-top-3'; }
+
+      return `
+        <tr>
+          <td class="rank-cell ${rankClass}">${rankBadge}</td>
+          <td class="rank-name">${item.name}</td>
+          <td class="rank-time">${item.timeStr}</td>
+          <td><span class="rank-praise-pill">✨ 건강한 식생활을 실천할 수 있게 되었군요 ~</span></td>
+          <td><span style="color: #34d399; font-weight: 700;">${item.sanity}%</span></td>
+          <td style="color: #94a3b8; font-size: 0.8rem;">${item.registeredAt || '-'}</td>
+        </tr>
+      `;
+    }).join('');
+
+    this.leaderboardContainerEl.innerHTML = `
+      <table class="ranking-table">
+        <thead>
+          <tr>
+            <th>순위</th>
+            <th>탈출자 (학번/이름)</th>
+            <th>탈출 소요 시간</th>
+            <th>식생활 실천 인증</th>
+            <th>잔여 정신력</th>
+            <th>등록 시간</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    `;
+  }
+
+  triggerGameOver(reason) {
+    this.gameState = 'GAMEOVER';
+    clearInterval(this.gameClockTimer);
+    if (this.investigateModalEl) {
+      this.investigateModalEl.classList.remove('show');
+    }
+    if (window.horrorAudio) window.horrorAudio.playGameOver();
+
+    const reasonEl = document.getElementById('gameOverReason');
+    if (reasonEl) reasonEl.textContent = reason;
+
+    if (this.gameOverModalEl) {
+      this.gameOverModalEl.classList.add('show');
+    }
+  }
+
+  triggerScreenShake() {
+    document.body.classList.add('screen-shake');
+    setTimeout(() => document.body.classList.remove('screen-shake'), 400);
+  }
+
+  triggerFlashEffect(type = 'red') {
+    const flashEl = document.createElement('div');
+    flashEl.className = `screen-flash flash-${type}`;
+    document.body.appendChild(flashEl);
+    setTimeout(() => flashEl.remove(), 450);
+  }
+
+  showToast(msg, type = 'info') {
+    if (!this.feedbackToastEl) return;
+    this.feedbackToastEl.textContent = msg;
+    this.feedbackToastEl.className = `action-toast show toast-${type}`;
+    clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => {
+      this.feedbackToastEl.classList.remove('show');
+    }, 2500);
+  }
+}
+
+// 안전한 실행 바인딩
+if (typeof window !== 'undefined') {
+  window.EscapeRoomGame = EscapeRoomGame;
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  window.game = new EscapeRoomGame();
+});
+
+</script>
+  
+  
+  
+</body>
+</html>
