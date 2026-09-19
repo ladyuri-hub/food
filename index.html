@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="중학교 1학년 기술·가정 청소년기 식생활 문제(아침결식, 섭식장애, 탄산음료와 당뇨, 나트륨과 고혈압, 편의점 즉석식품) 연계 공포의 부엌 방탈출 수업용 교육 게임">
+  <meta name="keywords" content="중학교 기술가정, 청소년 식생활 문제, 아침결식, 거식증, 폭식증, 마구먹기장애, 탄산음료, 당뇨병, 고혈압, 편의점식품, 방탈출게임">
+  <meta name="author" content="기술·가정 교사 개발자">
+  <title>저주받은 공포의 부엌: 청소년 식생활 탈출기 | 중1 기술·가정</title>
+  
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- 공포 분위기 비네팅 및 손전등 조명 오버레이 -->
+  <div class="vignette-overlay" id="vignetteOverlay" aria-hidden="true"></div>
+  <div class="flashlight-beam" id="flashlightBeam" aria-hidden="true"></div>
+
+  <!-- 실시간 알림 토스트 -->
+  <div class="action-toast" id="actionToast" role="alert" aria-live="polite"></div>
+
+  <!-- 상단 HUD 상태바 -->
+  <header class="game-hud">
+    <div class="hud-title-wrap">
+      <span class="hud-badge">중1 기술·가정</span>
+      <h1 class="hud-game-title">🩸 공포의 부엌: 식생활 탈출기</h1>
+    </div>
+
+    <!-- 상태 정보: 정신력, 남은 시간, 부적 -->
+    <div class="hud-status-group">
+      <!-- 정신력 (Sanity) -->
+      <div class="status-stat-box" title="정신력: 나쁜 정크푸드를 고르면 감소합니다!">
+        <span class="stat-label">🧠 생존 정신력: <strong id="sanityText">100%</strong></span>
+        <div class="sanity-bar-wrap">
+          <div class="sanity-bar-fill normal" id="sanityBar" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <!-- 타이머 -->
+      <div class="status-stat-box">
+        <span class="stat-label">⏱️ 탈출 제한시간</span>
+        <div class="timer-display" id="timerText">01:00</div>
+      </div>
+
+      <!-- 획득한 영양 부적 (5개 슬롯) -->
+      <div class="status-stat-box">
+        <span class="stat-label">✨ 영양 부적 (<span id="unlockedCount">0/5</span>)</span>
+        <div class="talisman-slot-container" id="talismanSlots">
+          <span class="talisman-icon inactive">⚪</span>
+          <span class="talisman-icon inactive">⚪</span>
+          <span class="talisman-icon inactive">⚪</span>
+          <span class="talisman-icon inactive">⚪</span>
+          <span class="talisman-icon inactive">⚪</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 상단 조작 버튼 -->
+    <div class="hud-actions">
+      <button type="button" class="ctrl-btn btn-ranking" id="openLeaderboardBtn" title="탈출 순서 명예의 전당 보기">
+        🏆 <span class="btn-text">탈출 명단</span>
+      </button>
+      <button type="button" class="ctrl-btn btn-notebook" id="openNotebookBtn" title="단서 해결 내용 및 수업 요약 보기">
+        📖 <span class="btn-text">탐정 영양 수첩</span>
+      </button>
+      <button type="button" class="ctrl-btn" id="soundToggleBtn" title="효과음 켜기/끄기">
+        🔊 <span class="btn-text">소리 켬</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== 공포의 부엌 메인 스테이지 ==================== -->
+  <main class="kitchen-room-wrapper">
+    <div class="kitchen-stage" id="kitchenStage" aria-label="공포의 부엌 방탈출 구역">
+      
+      <!-- 깜빡이는 붉은 전등 -->
+      <div class="kitchen-flicker-light"></div>
+
+      <!-- 부엌 바닥 -->
+      <div class="kitchen-floor"></div>
+
+      <!-- 1. 썩어가는 냉장고 (아침결식 & 뇌 건강) -->
+      <div class="kitchen-hotspot hotspot-fridge" data-area="fridge" tabindex="0" role="button" aria-label="오염된 냉장고 조사하기">
+        <div class="hotspot-icon-box">
+          <span class="hotspot-pulse-ring"></span>
+          <span>🧊</span>
+        </div>
+        <div class="hotspot-tag">
+          [1] 썩어가는 냉장고
+          <span class="hotspot-problem-sub">아침결식의 저주</span>
+        </div>
+      </div>
+
+      <!-- 2. 깨진 거울과 체중계 (섭식장애: 거식·폭식·마구먹기) -->
+      <div class="kitchen-hotspot hotspot-mirror" data-area="mirror" tabindex="0" role="button" aria-label="깨진 거울과 체중계 조사하기">
+        <div class="hotspot-icon-box">
+          <span class="hotspot-pulse-ring"></span>
+          <span>🪞</span>
+        </div>
+        <div class="hotspot-tag">
+          [2] 거울 & 체중계
+          <span class="hotspot-problem-sub">외모강박과 섭식장애</span>
+        </div>
+      </div>
+
+      <!-- 3. 부글부글 마녀의 냄비 (탄산음료 & 청소년 당뇨병) -->
+      <div class="kitchen-hotspot hotspot-cauldron" data-area="cauldron" tabindex="0" role="button" aria-label="마녀의 냄비 조사하기">
+        <div class="hotspot-icon-box">
+          <span class="hotspot-pulse-ring"></span>
+          <span>🧪</span>
+        </div>
+        <div class="hotspot-tag">
+          [3] 마녀의 냄비
+          <span class="hotspot-problem-sub">탄산·과당과 당뇨병</span>
+        </div>
+      </div>
+
+      <!-- 4. 편의점 야식 선반 (나트륨 폭탄 & 청소년 고혈압) -->
+      <div class="kitchen-hotspot hotspot-shelf" data-area="shelf" tabindex="0" role="button" aria-label="편의점 야식 선반 조사하기">
+        <div class="hotspot-icon-box">
+          <span class="hotspot-pulse-ring"></span>
+          <span>🍜</span>
+        </div>
+        <div class="hotspot-tag">
+          [4] 편의점 야식 선반
+          <span class="hotspot-problem-sub">나트륨과 고혈압</span>
+        </div>
+      </div>
+
+      <!-- 5. 사슬로 봉인된 탈출문 (최종 관문: 균형 영양 식단) -->
+      <div class="kitchen-hotspot hotspot-door" data-area="door" tabindex="0" role="button" aria-label="봉인된 탈출문 조사하기">
+        <div class="hotspot-icon-box">
+          <span class="hotspot-pulse-ring"></span>
+          <span>🚪</span>
+        </div>
+        <div class="hotspot-tag">
+          [5] 봉인된 탈출문
+          <span class="hotspot-problem-sub">최종 균형 식단 퍼즐</span>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ==================== 모달 시스템 ==================== -->
+
+  <!-- 1. 시작 인트로 모달 -->
+  <div class="modal-overlay show" id="introModal" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h2 class="modal-title" id="introTitle">🏚️ 저주받은 공포의 부엌</h2>
+      </div>
+      <div class="modal-body start-box">
+        <div class="start-main-title">방탈출: 청소년 식생활 탈출기</div>
+        
+        <p class="start-story-intro">
+          늦은 밤, 컵라면과 탄산음료를 먹고 잠든 당신...<br>
+          눈을 떠보니 기괴한 붉은 달빛이 스며드는 <strong>'저주받은 공포의 부엌'</strong>에 갇혔습니다!<br>
+          부엌 구석구석 도사린 <strong>청소년기 5대 식생활 문제의 망령</strong>을 물리치고,<br>
+          올바른 건강 식품을 선택하여 5개의 영양 부적을 완성해야만 탈출문이 열립니다!
+        </p>
+
+        <div class="rule-highlight-grid">
+          <div class="rule-col safe">
+            <strong>✨ 건강 식품 선택 시</strong>
+            <p>공포가 정화되고, 부적을 얻으며, '탐정 영양 수첩'에 원인·영향·해결책이 기록됩니다!</p>
+          </div>
+          <div class="rule-col danger">
+            <strong>💀 나쁜 정크푸드 선택 시</strong>
+            <p>독소와 공포로 정신력(뇌 에너지)이 깎이며, 0%가 되면 영원히 갇히게 됩니다!</p>
+          </div>
+        </div>
+
+        <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 12px; padding: 12px 16px; margin: 12px 0; text-align: left; font-size: 0.9rem; color: #fecaca;">
+          <div style="font-weight: 700; color: #f87171; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            <span>⏱️ 긴급 미션: 1분 (60초) 타임어택!</span>
+          </div>
+          <div>1분 안에 5개 구역의 식생활 문제를 해결하지 못하면 <strong>즉시 탈락</strong>합니다!</div>
+          <div style="margin-top: 6px; color: #fef08a; font-size: 0.85rem;">
+            💡 <strong>교사의 힌트:</strong> 겉보기엔 건강식 같지만 실제론 단순당·나트륨 폭탄인 <em>'고난도 위장 함정'</em>이 섞여 있으니 신중하게 선택하세요!
+          </div>
+        </div>
+
+        <button type="button" class="btn-large-start" id="startGameBtn">
+          🔦 손전등을 켜고 1분 타임어택 시작!
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 구역 단서 조사 및 퀴즈 모달 -->
+  <div class="modal-overlay" id="investigateModal" role="dialog" aria-modal="true" aria-labelledby="investigateAreaTitle">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h2 class="modal-title" id="investigateAreaTitle">🔍 구역 단서 조사</h2>
+        <button type="button" class="close-btn close-investigate-btn" aria-label="조사 닫기">&times;</button>
+      </div>
+      <div class="modal-body" id="investigateContent">
+        <!-- 자바스크립트로 동적 렌더링 -->
+      </div>
+      <div class="modal-footer" style="padding: 12px 24px; border-top: 1px solid #334155; display: flex; justify-content: flex-end;">
+        <button type="button" class="ctrl-btn close-investigate-btn">부엌으로 돌아가기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 탐정 영양 수첩 모달 (수업 정리 및 복습) -->
+  <div class="modal-overlay" id="notebookModal" role="dialog" aria-modal="true" aria-labelledby="notebookModalTitle">
+    <div class="modal-window notebook-window">
+      <div class="modal-header">
+        <h2 class="modal-title" id="notebookModalTitle">📖 탐정 영양 수첩 (식생활 문제 총정리)</h2>
+        <button type="button" class="close-btn close-notebook-btn" aria-label="수첩 닫기">&times;</button>
+      </div>
+      <div class="modal-body" id="notebookContent">
+        <!-- 자바스크립트로 동적 렌더링 -->
+      </div>
+      <div class="modal-footer" style="padding: 14px 24px; border-top: 1px solid #334155; display: flex; justify-content: flex-end;">
+        <button type="button" class="ctrl-btn btn-primary close-notebook-btn">확인 완료</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. 대탈출 성공 승리 모달 -->
+  <div class="modal-overlay" id="victoryModal" role="dialog" aria-modal="true" aria-labelledby="victoryTitle">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h2 class="modal-title" id="victoryTitle" style="color: #34d399;">🎉 대탈출 성공!</h2>
+      </div>
+      <div class="modal-body result-box">
+        <div class="victory-title">저주가 풀렸습니다!</div>
+        <p style="font-size: 1.05rem; line-height: 1.6; color: #e2e8f0;">
+          5개의 영양 부적이 하나로 모여 눈부신 빛을 뿜어냅니다.<br>
+          부엌을 짓누르던 썩은 야식의 냄새와 공포의 안개가 걷히고, 따사로운 아침 햇살이 비쳐듭니다!
+        </p>
+
+        <!-- 교사의 칭찬 한마디 배너 -->
+        <div class="teacher-praise-banner" id="teacherPraiseBanner">
+          <div class="praise-avatar">👨‍🏫</div>
+          <div class="praise-content">
+            <span class="praise-label">선생님의 칭찬 한마디</span>
+            <div class="praise-text" id="praiseQuoteText">"건강한 식생활을 실천할 수 있게 되었군요 ~"</div>
+          </div>
+        </div>
+
+        <div class="certificate-card">
+          <div class="cert-badge">🏆 청소년 식생활 마스터 인증서</div>
+          <p class="cert-desc">
+            귀하는 아침결식, 섭식장애, 당류 과다, 나트륨 중독의 위험성을 완벽히 간파하고,<br>
+            <strong>성장기 청소년의 몸과 뇌를 위한 균형 잡힌 건강 식품</strong>을 올바르게 선택하여<br>
+            공포의 부엌을 당당히 탈출하였음을 증명합니다!
+          </p>
+          <div class="escape-stats-grid">
+            <div class="stat-pill">⏱️ 탈출 소요 시간: <strong id="victoryTimeTaken">00분 00초</strong></div>
+            <div class="stat-pill">🧠 최종 잔여 정신력: <strong id="victorySanity">100%</strong></div>
+          </div>
+        </div>
+
+        <!-- 빠른 탈출 명예의 전당 등록 카드 -->
+        <div class="leaderboard-register-card" id="leaderboardRegisterCard">
+          <div class="register-header">
+            <span>🏆 탈출 순위 명단 등록</span>
+            <span class="escape-time-badge" id="playerTimeBadge">00분 00초 기록</span>
+          </div>
+          <div class="input-action-row">
+            <input type="text" id="playerNameInput" class="name-input" placeholder="학번 / 이름 / 모둠명 (예: 1-2 김민수)" maxlength="15">
+            <button type="button" class="ctrl-btn btn-primary" id="saveScoreBtn">명단 등록</button>
+          </div>
+          <div id="registerSuccessMsg" class="register-success-msg hidden">✅ 탈출 명단에 등록되었습니다! 건강한 식생활을 실천할 수 있게 되었군요 ~</div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px;">
+          <button type="button" class="ctrl-btn btn-ranking" id="viewLeaderboardFromVictoryBtn" style="justify-content: center; padding: 12px;">
+            🏆 탈출 명단 보기
+          </button>
+          <button type="button" class="ctrl-btn btn-notebook" id="openNotebookFromVictoryBtn" onclick="window.game.notebook.open();" style="justify-content: center; padding: 12px;">
+            📖 수업 정리 수첩
+          </button>
+          <button type="button" class="ctrl-btn restart-game-btn" style="justify-content: center; padding: 12px;">
+            🔄 다시 도전하기
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 탈출 순서 명예의 전당 모달 (Leaderboard) -->
+  <div class="modal-overlay" id="leaderboardModal" role="dialog" aria-modal="true" aria-labelledby="leaderboardTitle">
+    <div class="modal-window leaderboard-window">
+      <div class="modal-header">
+        <h2 class="modal-title" id="leaderboardTitle" style="color: #fbbf24;">🏆 탈출 순서 명예의 전당</h2>
+        <button type="button" class="close-btn close-leaderboard-btn" aria-label="명단 닫기">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="leaderboard-praise-banner">
+          <span class="praise-star">✨</span>
+          <span>빨리 탈출한 자랑스러운 학생들! <strong>"건강한 식생활을 실천할 수 있게 되었군요 ~"</strong></span>
+        </div>
+        <div class="leaderboard-info-banner">
+          <span>⚡ <strong>빨리 탈출한 순서대로</strong> 자동 정렬됩니다.</span>
+          <button type="button" class="ctrl-btn btn-danger-subtle" id="resetLeaderboardBtn" title="다음 반 수업을 위한 명단 초기화">
+            🗑️ 명단 초기화 (교사용)
+          </button>
+        </div>
+        <div class="leaderboard-table-wrap" id="leaderboardTableContainer">
+          <!-- 명단 테이블이 자바스크립트로 렌더링됩니다 -->
+        </div>
+      </div>
+      <div class="modal-footer" style="padding: 14px 24px; border-top: 1px solid #334155; display: flex; justify-content: flex-end;">
+        <button type="button" class="ctrl-btn close-leaderboard-btn">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 게임 오버 모달 -->
+  <div class="modal-overlay" id="gameOverModal" role="dialog" aria-modal="true" aria-labelledby="gameOverTitle">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h2 class="modal-title" id="gameOverTitle">💀 탈출 실패...</h2>
+      </div>
+      <div class="modal-body result-box">
+        <div style="font-size: 3rem;">👻</div>
+        <div style="font-family: var(--font-game); font-size: 1.8rem; color: #ef4444;">정크푸드 망령의 지배</div>
+        <p id="gameOverReason" style="font-size: 1rem; color: #fecaca; line-height: 1.5; background: #7f1d1d; padding: 12px; border-radius: 10px;">
+          정신력이 바닥나 공포의 부엌을 탈출하지 못했습니다...
+        </p>
+        <p style="font-size: 0.88rem; color: #cbd5e1;">
+          💡 <strong>교사의 조언:</strong> 자극적인 정크푸드의 유혹을 이겨내고, 몸과 뇌에 에너지를 주는 진짜 건강 식품을 선택해 보세요!
+        </p>
+        <button type="button" class="ctrl-btn restart-game-btn" style="justify-content: center; padding: 14px; background: #991b1b; border-color: #ef4444;">
+          🔄 다시 도전하기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 모듈 스크립트 순차 로드 (CORS 문제 없는 완벽한 표준 스크립트) -->
+  <script src="js/data.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/notebook.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
