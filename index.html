@@ -60,8 +60,8 @@
       <button type="button" class="ctrl-btn btn-ranking" id="openLeaderboardBtn" title="탈출 순서 명예의 전당 보기">
         🏆 <span class="btn-text">탈출 명단</span>
       </button>
-      <button type="button" class="ctrl-btn btn-notebook" id="openNotebookBtn" title="단서 해결 내용 및 수업 요약 보기">
-        📖 <span class="btn-text">탐정 영양 수첩</span>
+      <button type="button" class="ctrl-btn btn-notebook" id="openNotebookBtn" title="수업 내용 정리 및 학습지 작성용 마스터시트 보기">
+        📝 <span class="btn-text">수업 내용 정리 (학습지)</span>
       </button>
       <button type="button" class="ctrl-btn" id="soundToggleBtn" title="효과음 켜기/끄기">
         🔊 <span class="btn-text">소리 켬</span>
@@ -208,7 +208,7 @@
   <div class="modal-overlay" id="notebookModal" role="dialog" aria-modal="true" aria-labelledby="notebookModalTitle">
     <div class="modal-window notebook-window">
       <div class="modal-header">
-        <h2 class="modal-title" id="notebookModalTitle">📖 탐정 영양 수첩 (식생활 문제 총정리)</h2>
+        <h2 class="modal-title" id="notebookModalTitle">📝 수업 내용 정리 (학습지 작성용 마스터시트)</h2>
         <button type="button" class="close-btn close-notebook-btn" aria-label="수첩 닫기">&times;</button>
       </div>
       <div class="modal-body" id="notebookContent">
@@ -272,8 +272,8 @@
           <button type="button" class="ctrl-btn btn-ranking" id="viewLeaderboardFromVictoryBtn" style="justify-content: center; padding: 12px;">
             🏆 탈출 명단 보기
           </button>
-          <button type="button" class="ctrl-btn btn-notebook" id="openNotebookFromVictoryBtn" onclick="window.game.notebook.open();" style="justify-content: center; padding: 12px;">
-            📖 수업 정리 수첩
+          <button type="button" class="ctrl-btn btn-notebook" id="openNotebookFromVictoryBtn" onclick="window.game.notebook.open(true);" style="justify-content: center; padding: 12px;">
+            📝 수업 내용 정리 (학습지)
           </button>
           <button type="button" class="ctrl-btn restart-game-btn" style="justify-content: center; padding: 12px;">
             🔄 다시 도전하기
@@ -326,9 +326,14 @@
         <p style="font-size: 0.88rem; color: #cbd5e1;">
           💡 <strong>교사의 조언:</strong> 자극적인 정크푸드의 유혹을 이겨내고, 몸과 뇌에 에너지를 주는 진짜 건강 식품을 선택해 보세요!
         </p>
-        <button type="button" class="ctrl-btn restart-game-btn" style="justify-content: center; padding: 14px; background: #991b1b; border-color: #ef4444;">
-          🔄 다시 도전하기
-        </button>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+          <button type="button" class="ctrl-btn btn-notebook" onclick="window.game.notebook.open(true);" style="justify-content: center; padding: 12px;">
+            📝 수업 내용 정리 (학습지용)
+          </button>
+          <button type="button" class="ctrl-btn restart-game-btn" style="justify-content: center; padding: 12px; background: #991b1b; border-color: #ef4444;">
+            🔄 다시 도전하기
+          </button>
+        </div>
       </div>
     </div>
   </div>

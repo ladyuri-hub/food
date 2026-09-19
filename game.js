@@ -203,6 +203,7 @@ class EscapeRoomGame {
     }
 
     this.currentArea = areaData;
+    this.currentQuestionStep = 0;
     this.renderInvestigateModal(areaData);
     if (this.investigateModalEl) {
       this.investigateModalEl.classList.add('show');
@@ -219,6 +220,39 @@ class EscapeRoomGame {
     if (!this.investigateContentEl) return;
     const isAlreadySolved = this.solvedAreas.has(area.id);
 
+    if (isAlreadySolved) {
+      const talisman = area.questions && area.questions[1] 
+        ? area.questions[1].choices.find(c => c.isHealthy)?.talisman || '영양 부적'
+        : '영양 부적';
+
+      this.investigateContentEl.innerHTML = `
+        <div class="investigate-header">
+          <span class="investigate-icon">${area.icon}</span>
+          <div class="header-text-wrap">
+            <span class="investigate-badge">${area.topic}</span>
+            <h2 class="investigate-title">${area.name}</h2>
+          </div>
+        </div>
+        <div class="already-solved-banner">
+          <div style="font-size: 2rem;">✨</div>
+          <h3>이미 2단계 문제를 모두 통과해 정화된 구역입니다!</h3>
+          <p>획득한 부적: <strong>${talisman}</strong></p>
+          <p class="solved-tip">💡 탐정 영양 수첩(학습지 정리)에서 이 구역의 [원인 - 영향 - 해결방안]을 복습할 수 있습니다.</p>
+        </div>
+      `;
+      return;
+    }
+
+    this.renderQuestionStepView();
+  }
+
+  renderQuestionStepView() {
+    if (!this.investigateContentEl || !this.currentArea) return;
+    const area = this.currentArea;
+    const questions = area.questions || [];
+    const qIndex = this.currentQuestionStep;
+    const currentQ = questions[qIndex] || questions[0];
+
     this.investigateContentEl.innerHTML = `
       <div class="investigate-header">
         <span class="investigate-icon">${area.icon}</span>
@@ -232,44 +266,46 @@ class EscapeRoomGame {
         <p class="story-speech">${area.storyText.replace(/\n/g, '<br>')}</p>
       </div>
 
-      ${isAlreadySolved ? `
-        <div class="already-solved-banner">
-          <div style="font-size: 2rem;">✨</div>
-          <h3>이미 정화된 구역입니다!</h3>
-          <p>획득한 부적: <strong>${area.choices.find(c => c.isHealthy).talisman}</strong></p>
-          <p class="solved-tip">💡 탐정 영양 수첩에서 이 구역의 [원인 - 영향 - 해결방안]을 복습할 수 있습니다.</p>
+      <!-- 2단계 문제 진행 표시기 -->
+      <div class="quiz-step-nav">
+        <div class="step-pill ${qIndex === 0 ? 'active' : 'completed'}">
+          ${qIndex > 0 ? '✅' : '1️⃣'} 문제 1: 원인·영향 파악
         </div>
-      ` : `
-        <div class="quiz-question-box">
-          <span class="question-badge">생사의 갈림길 선택</span>
-          <p class="question-text">${area.question}</p>
+        <span class="step-arrow">➔</span>
+        <div class="step-pill ${qIndex === 1 ? 'active' : 'upcoming'}">
+          2️⃣ 문제 2: 건강 식품 실천
         </div>
+      </div>
 
-        <div class="choices-list" id="choicesContainer">
-          ${area.choices.map((choice, i) => `
-            <button type="button" class="choice-card-btn" data-choice-id="${choice.id}">
-              <span class="choice-num">${i + 1}</span>
-              <span class="choice-name">${choice.name}</span>
-            </button>
-          `).join('')}
-        </div>
-        <div id="choiceFeedbackBox" class="choice-feedback-box hidden"></div>
-      `}
+      <div class="quiz-question-box">
+        <span class="question-badge">${currentQ.stepTitle || `문제 ${qIndex + 1}`}</span>
+        <p class="question-text">${currentQ.question}</p>
+      </div>
+
+      <div class="choices-list" id="choicesContainer">
+        ${currentQ.choices.map((choice, i) => `
+          <button type="button" class="choice-card-btn" data-choice-id="${choice.id}">
+            <span class="choice-num">${i + 1}</span>
+            <span class="choice-name">${choice.name}</span>
+          </button>
+        `).join('')}
+      </div>
+
+      <div id="choiceFeedbackBox" class="choice-feedback-box hidden"></div>
     `;
 
-    if (!isAlreadySolved) {
-      document.querySelectorAll('.choice-card-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          const choiceId = e.currentTarget.dataset.choiceId;
-          this.handleChoice(choiceId);
-        });
+    document.querySelectorAll('.choice-card-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const choiceId = e.currentTarget.dataset.choiceId;
+        this.handleChoice(choiceId);
       });
-    }
+    });
   }
 
   handleChoice(choiceId) {
-    if (!this.currentArea) return;
-    const choice = this.currentArea.choices.find(c => c.id === choiceId);
+    if (!this.currentArea || !this.currentArea.questions) return;
+    const currentQ = this.currentArea.questions[this.currentQuestionStep];
+    const choice = currentQ.choices.find(c => c.id === choiceId);
     if (!choice) return;
 
     const feedbackBox = document.getElementById('choiceFeedbackBox');
@@ -277,64 +313,88 @@ class EscapeRoomGame {
 
     if (choice.isHealthy) {
       // ==========================================
-      // [올바른 건강 식품 선택! 정화 성공]
+      // [정답 선택!]
       // ==========================================
       if (window.horrorAudio) window.horrorAudio.playPurificationChime();
-
-      this.solvedAreas.add(this.currentArea.id);
-      this.talismans.push(choice.talisman);
-      if (this.notebook) this.notebook.unlock(this.currentArea.id);
-
-      // 핫스팟 정화 비주얼
-      const hotspotEl = document.querySelector(`.kitchen-hotspot[data-area="${this.currentArea.id}"]`);
-      if (hotspotEl) hotspotEl.classList.add('purified');
-
-      this.modifySanity(15);
+      this.modifySanity(10);
       this.triggerFlashEffect('gold');
-      const isDoor = this.currentArea.id === 'door';
-      const allFiveSolved = this.solvedAreas.size === 5;
 
-      if (feedbackBox) {
-        feedbackBox.className = 'choice-feedback-box success-feedback';
-        const buttonText = (isDoor || allFiveSolved) ? '🚪 탈출문 열고 대탈출하기!' : '다음 단서 찾으러 가기';
-        feedbackBox.innerHTML = `
-          <div class="feedback-heading">🎉 생명의 정화 성공!</div>
-          <p class="feedback-desc">${choice.feedback}</p>
-          <div class="obtained-item">
-            <span>부적 획득:</span> <strong>${choice.talisman}</strong>
-          </div>
-          <button type="button" class="ctrl-btn btn-primary" id="confirmNextBtn" style="margin-top: 12px; width: 100%; font-size: 1.05rem; padding: 12px;">
-            ${buttonText}
-          </button>
-        `;
-        feedbackBox.classList.remove('hidden');
-        if (choicesList) choicesList.classList.add('disabled-choices');
+      if (this.currentQuestionStep === 0) {
+        // 1단계 통과 -> 2단계 문제로 진행!
+        if (feedbackBox) {
+          feedbackBox.className = 'choice-feedback-box success-feedback';
+          feedbackBox.innerHTML = `
+            <div class="feedback-heading">🎉 1단계 정답 통과!</div>
+            <p class="feedback-desc">${choice.feedback}</p>
+            <p style="color: #fef08a; font-size: 0.9rem; margin-top: 6px;">💡 원인과 영향을 파악했습니다! 이제 2단계 실천 문제를 풀어 부적을 획득하세요.</p>
+            <button type="button" class="ctrl-btn btn-primary" id="nextQuestionStepBtn" style="margin-top: 12px; width: 100%; font-size: 1.05rem; padding: 12px;">
+              2단계 실천 문제 풀기 ➔
+            </button>
+          `;
+          feedbackBox.classList.remove('hidden');
+          if (choicesList) choicesList.classList.add('disabled-choices');
 
-        document.getElementById('confirmNextBtn').addEventListener('click', () => {
-          this.closeInvestigate();
-          if (isDoor || this.solvedAreas.size === 5) {
-            setTimeout(() => this.triggerVictory(), 200);
-          }
-        });
+          document.getElementById('nextQuestionStepBtn').addEventListener('click', () => {
+            this.currentQuestionStep = 1;
+            this.renderQuestionStepView();
+          });
+        }
+      } else {
+        // 2단계 통과 -> 구역 완전 정화!
+        this.solvedAreas.add(this.currentArea.id);
+        if (choice.talisman) {
+          this.talismans.push(choice.talisman);
+        }
+        if (this.notebook) this.notebook.unlock(this.currentArea.id);
+
+        const hotspotEl = document.querySelector(`.kitchen-hotspot[data-area="${this.currentArea.id}"]`);
+        if (hotspotEl) hotspotEl.classList.add('purified');
+
+        const isDoor = this.currentArea.id === 'door';
+        const allFiveSolved = this.solvedAreas.size === 5;
+
+        if (feedbackBox) {
+          feedbackBox.className = 'choice-feedback-box success-feedback';
+          const buttonText = (isDoor || allFiveSolved) ? '🚪 탈출문 열고 대탈출하기!' : '다음 단서 찾으러 가기';
+          feedbackBox.innerHTML = `
+            <div class="feedback-heading">🎉 2단계 실천 완료! 구역 정화 성공!</div>
+            <p class="feedback-desc">${choice.feedback}</p>
+            <div class="obtained-item">
+              <span>부적 획득:</span> <strong>${choice.talisman || '영양 부적'}</strong>
+            </div>
+            <button type="button" class="ctrl-btn btn-primary" id="confirmNextBtn" style="margin-top: 12px; width: 100%; font-size: 1.05rem; padding: 12px;">
+              ${buttonText}
+            </button>
+          `;
+          feedbackBox.classList.remove('hidden');
+          if (choicesList) choicesList.classList.add('disabled-choices');
+
+          document.getElementById('confirmNextBtn').addEventListener('click', () => {
+            this.closeInvestigate();
+            if (isDoor || this.solvedAreas.size === 5) {
+              setTimeout(() => this.triggerVictory(), 200);
+            }
+          });
+        }
       }
 
     } else {
       // ==========================================
-      // [나쁜 정크푸드 선택! 공포의 페널티]
+      // [오답 선택! 공포의 페널티]
       // ==========================================
       if (window.horrorAudio) window.horrorAudio.playJumpScareSting();
 
-      this.modifySanity(-20);
+      this.modifySanity(-10);
       this.triggerScreenShake();
       this.triggerFlashEffect('red');
-      this.showToast(`⚠️ 나쁜 식품 선택! 독소와 공포로 정신력이 20 깎였습니다!`, 'danger');
+      this.showToast(`⚠️ 오답 선택! 공포로 정신력이 10 깎였습니다!`, 'danger');
 
       if (feedbackBox) {
         feedbackBox.className = 'choice-feedback-box danger-feedback';
         feedbackBox.innerHTML = `
           <div class="feedback-heading">💀 저주받은 선택!</div>
           <p class="feedback-desc">${choice.feedback}</p>
-          <p class="hint-text">💡 왜 이 음식이 청소년 몸에 치명적인지 고민해보고 다시 선택하세요!</p>
+          <p class="hint-text">💡 왜 이 답이 틀렸는지 고민해보고 올바른 보기를 다시 선택하세요!</p>
         `;
         feedbackBox.classList.remove('hidden');
       }
